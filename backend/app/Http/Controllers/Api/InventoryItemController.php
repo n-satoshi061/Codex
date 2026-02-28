@@ -6,9 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\InventoryItem;
 use App\Support\InventoryDashboardBuilder;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class InventoryItemController extends Controller
 {
@@ -67,15 +68,33 @@ class InventoryItemController extends Controller
     {
         $required = $partial ? 'sometimes' : 'required';
         $validated = $request->validate([
-            'name' => [$required, 'string', 'max:255'],
+            'name' => [$required, 'string', 'min:1', 'max:255'],
             'categoryId' => [$required, 'uuid', 'exists:categories,id'],
             'storageLocationId' => [$required, 'uuid', 'exists:storage_locations,id'],
             'quantity' => [$required, 'integer', 'min:0'],
             'threshold' => [$required, 'integer', 'min:0'],
-            'unit' => [$required, 'string', 'max:30'],
+            'unit' => [$required, 'string', 'min:1', 'max:30'],
             'expiresAt' => ['sometimes', 'nullable', 'date'],
             'note' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ]);
+
+        foreach (['name', 'unit', 'note'] as $field) {
+            if (array_key_exists($field, $validated) && is_string($validated[$field])) {
+                $validated[$field] = trim($validated[$field]);
+            }
+        }
+
+        foreach (['name', 'unit'] as $field) {
+            if (array_key_exists($field, $validated) && $validated[$field] === '') {
+                throw ValidationException::withMessages([
+                    $field => '入力内容を確認してください。',
+                ]);
+            }
+        }
+
+        if (array_key_exists('note', $validated) && $validated['note'] === '') {
+            $validated['note'] = null;
+        }
 
         if (array_key_exists('expiresAt', $validated)) {
             $validated['expires_at'] = $validated['expiresAt'];
