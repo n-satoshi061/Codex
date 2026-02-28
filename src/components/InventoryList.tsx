@@ -83,6 +83,7 @@ export const InventoryList = ({
         {groupedItems.map((group) => {
           const remaining = daysUntil(group.nearestExpiresAt);
           const expanded = expandedNames.includes(group.name);
+          const showDetails = expanded || group.entryCount === 1;
 
           return (
             <ItemCard key={group.name} $active={group.items.some((item) => item.id === editingItemId)}>
@@ -124,7 +125,7 @@ export const InventoryList = ({
                   )}
                 </GroupMetaRow>
                 {group.note && <NoteText>{group.note}</NoteText>}
-                {expanded && (
+                {showDetails && (
                   <DetailList>
                     {group.items.map((item) => {
                       const itemRemaining = daysUntil(item.expiresAt);

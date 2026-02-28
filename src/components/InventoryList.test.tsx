@@ -28,6 +28,30 @@ describe('InventoryList', () => {
     expect(screen.getByText('期限近い')).toBeInTheDocument();
   });
 
+  it('単一在庫は明細を開かなくても操作ボタンを表示する', () => {
+    render(
+      <InventoryList
+        categories={metadataFixture.categories}
+        editingItemId={null}
+        groupedItems={groupInventoryItems([stockItemsFixture[0]])}
+        isLoading={false}
+        search=""
+        selectedCategory="すべて"
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        onSearchChange={vi.fn()}
+        onSelectedCategoryChange={vi.fn()}
+        onUpdateQuantity={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: '期限別の明細を見る' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '編集' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '-1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '削除' })).toBeInTheDocument();
+  });
+
   it('明細を開いて操作ボタンでコールバックを呼び出す', async () => {
     const user = userEvent.setup();
     const onUpdateQuantity = vi.fn();
