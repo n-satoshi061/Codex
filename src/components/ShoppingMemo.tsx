@@ -9,7 +9,7 @@ export const ShoppingMemo = ({ items }: ShoppingMemoProps) => (
   <Panel>
     <PanelHeading>
       <h2>買い物メモ</h2>
-      <p>下限以下の在庫を MySQL から抽出</p>
+      <p>買い足しが必要なものをまとめて表示</p>
     </PanelHeading>
     <ShoppingList>
       {items.length === 0 ? (

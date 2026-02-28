@@ -46,7 +46,7 @@ export const InventoryForm = ({
     <Panel>
       <PanelHeading>
         <h2>在庫を追加</h2>
-        <p>マスタ選択肢も MySQL から取得</p>
+        <p>カテゴリと保管場所を選んで登録</p>
       </PanelHeading>
       <FormGrid onSubmit={onSubmit}>
         <FieldLabel>

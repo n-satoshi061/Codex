@@ -17,7 +17,7 @@ export const HeroSection = ({ statusMessage, summary }: HeroSectionProps) => (
       <Eyebrow>Home Inventory</Eyebrow>
       <Title>うちの在庫ノート</Title>
       <HeroCopy>
-        家庭の食品と日用品を MySQL に一元保存。カテゴリや保管場所の選択肢も Laravel の seed データから読み込みます。
+        家庭の食品と日用品をひとつの画面で見やすく管理。カテゴリや保管場所もまとめて選べます。
       </HeroCopy>
       <SyncBadge>{statusMessage}</SyncBadge>
     </HeroText>

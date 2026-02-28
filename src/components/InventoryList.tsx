@@ -111,7 +111,7 @@ export const InventoryList = ({
         );
       })}
       {!isLoading && filteredItems.length === 0 && (
-        <MutedText>MySQL に在庫がまだありません。seed または追加フォームから登録してください。</MutedText>
+        <MutedText>表示できる在庫がまだありません。追加フォームから登録してください。</MutedText>
       )}
     </ItemList>
   </Panel>
