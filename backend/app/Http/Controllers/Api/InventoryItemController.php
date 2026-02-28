@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\InventoryItem;
+use App\Support\InventoryDashboardBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
@@ -11,18 +12,21 @@ use Illuminate\Support\Str;
 
 class InventoryItemController extends Controller
 {
+    public function __construct(
+        private readonly InventoryDashboardBuilder $dashboardBuilder,
+    ) {
+    }
+
     public function index(): JsonResponse
     {
         $items = InventoryItem::query()
             ->with(['category', 'storageLocation'])
-            ->orderByRaw('quantity <= threshold desc')
-            ->orderBy('expires_at')
-            ->orderBy('name')
-            ->get()
-            ->map(fn (InventoryItem $item) => $this->presentItem($item));
+            ->get();
 
         return response()->json([
-            'data' => $items,
+            'data' => $this->dashboardBuilder->sortItems($items)
+                ->map(fn (InventoryItem $item) => $this->dashboardBuilder->presentInventoryItem($item))
+                ->values(),
         ]);
     }
 
@@ -36,7 +40,7 @@ class InventoryItemController extends Controller
         ]);
 
         return response()->json([
-            'data' => $this->presentItem($item),
+            'data' => $this->dashboardBuilder->presentInventoryItem($item->load(['category', 'storageLocation'])),
         ], 201);
     }
 
@@ -48,7 +52,7 @@ class InventoryItemController extends Controller
         $inventoryItem->save();
 
         return response()->json([
-            'data' => $this->presentItem($inventoryItem->fresh()),
+            'data' => $this->dashboardBuilder->presentInventoryItem($inventoryItem->fresh(['category', 'storageLocation'])),
         ]);
     }
 
@@ -89,23 +93,5 @@ class InventoryItemController extends Controller
         }
 
         return $validated;
-    }
-
-    private function presentItem(InventoryItem $item): array
-    {
-        return [
-            'id' => $item->id,
-            'name' => $item->name,
-            'categoryId' => $item->category_id,
-            'categoryName' => $item->category?->name ?? '',
-            'storageLocationId' => $item->storage_location_id,
-            'storageLocationName' => $item->storageLocation?->name ?? '',
-            'quantity' => $item->quantity,
-            'threshold' => $item->threshold,
-            'unit' => $item->unit,
-            'expiresAt' => optional($item->expires_at)->toDateString(),
-            'updatedAt' => optional($item->updated_at)->toISOString(),
-            'note' => $item->note ?? '',
-        ];
     }
 }
