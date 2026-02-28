@@ -100,7 +100,9 @@ export const useInventoryDashboard = () => {
   const submitInventoryForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const currentForm = stateRef.current.form;
-    if (!currentForm.name.trim() || !currentForm.categoryId || !currentForm.storageLocationId) return;
+    if (!currentForm.name.trim() || !currentForm.categoryId || !currentForm.storageLocationId) {
+      return false;
+    }
 
     try {
       const normalizedPayload = {
@@ -113,11 +115,12 @@ export const useInventoryDashboard = () => {
       if (stateRef.current.formMode === 'edit' && stateRef.current.editingItemId) {
         const savedItem = await updateInventoryItem(stateRef.current.editingItemId, normalizedPayload);
         dispatch({ type: 'itemUpdated', item: savedItem, statusMessage: '在庫情報を更新しました。' });
-        return;
+        return true;
       }
 
       const savedItem = await createInventoryItem(normalizedPayload);
       dispatch({ type: 'itemAdded', item: savedItem, statusMessage: '在庫を追加しました。' });
+      return true;
     } catch {
       dispatch({
         type: 'statusUpdated',
@@ -126,6 +129,7 @@ export const useInventoryDashboard = () => {
             ? '在庫情報を更新できませんでした。時間をおいて再度お試しください。'
             : '在庫を追加できませんでした。時間をおいて再度お試しください。',
       });
+      return false;
     }
   };
 

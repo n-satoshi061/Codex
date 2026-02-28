@@ -1,11 +1,15 @@
+import { FormEvent } from 'react';
+import { DashboardNavigation } from './components/DashboardNavigation';
 import { HeroSection } from './components/HeroSection';
-import { InventoryForm } from './components/InventoryForm';
-import { InventoryList } from './components/InventoryList';
-import { ShoppingMemo } from './components/ShoppingMemo';
-import { AppShell, ContentStack, GlobalStyle, LayoutPanel } from './styles/appStyles';
+import { InventoryFormPage } from './components/InventoryFormPage';
+import { InventoryPage } from './components/InventoryPage';
+import { ShoppingMemoPage } from './components/ShoppingMemoPage';
+import { useDashboardView } from './hooks/useDashboardView';
 import { useInventoryDashboard } from './hooks/useInventoryDashboard';
+import { AppShell, GlobalStyle, PageContent } from './styles/appStyles';
 
 const App = () => {
+  const { activeView, openAddView, openInventoryView, openShoppingView } = useDashboardView();
   const {
     cancelEditingItem,
     categories,
@@ -30,24 +34,39 @@ const App = () => {
     updateQuantity,
   } = useInventoryDashboard();
 
+  const handleEditItem = (id: string) => {
+    startEditingItem(id);
+    openAddView();
+  };
+
+  const handleCancelEdit = () => {
+    cancelEditingItem();
+    openInventoryView();
+  };
+
+  const handleSubmitInventoryForm = async (event: FormEvent<HTMLFormElement>) => {
+    const wasEditing = formMode === 'edit';
+    const isSubmitted = await submitInventoryForm(event);
+
+    if (isSubmitted && wasEditing) {
+      openInventoryView();
+    }
+  };
+
   return (
     <>
       <GlobalStyle />
       <AppShell>
         <HeroSection statusMessage={statusMessage} summary={summary} />
-        <LayoutPanel>
-          <InventoryForm
-            categories={categories}
-            formMode={formMode}
-            form={form}
-            isLoading={isLoading}
-            storageLocations={storageLocations}
-            onCancelEdit={cancelEditingItem}
-            onChange={setForm}
-            onSubmit={submitInventoryForm}
-          />
-          <ContentStack>
-            <InventoryList
+        <DashboardNavigation
+          activeView={activeView}
+          onAddClick={openAddView}
+          onInventoryClick={openInventoryView}
+          onShoppingClick={openShoppingView}
+        />
+        <PageContent>
+          {activeView === 'inventory' && (
+            <InventoryPage
               categories={categories}
               editingItemId={editingItemId}
               groupedItems={groupedItems}
@@ -55,14 +74,26 @@ const App = () => {
               search={search}
               selectedCategory={selectedCategory}
               onDelete={deleteItem}
-              onEdit={startEditingItem}
+              onEdit={handleEditItem}
               onSearchChange={setSearch}
               onSelectedCategoryChange={setSelectedCategory}
               onUpdateQuantity={updateQuantity}
             />
-            <ShoppingMemo items={shoppingList} />
-          </ContentStack>
-        </LayoutPanel>
+          )}
+          {activeView === 'add' && (
+            <InventoryFormPage
+              categories={categories}
+              formMode={formMode}
+              form={form}
+              isLoading={isLoading}
+              storageLocations={storageLocations}
+              onCancelEdit={handleCancelEdit}
+              onChange={setForm}
+              onSubmit={handleSubmitInventoryForm}
+            />
+          )}
+          {activeView === 'shopping' && <ShoppingMemoPage items={shoppingList} />}
+        </PageContent>
       </AppShell>
     </>
   );

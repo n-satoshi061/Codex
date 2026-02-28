@@ -37,6 +37,8 @@ export type InventoryFormState = {
 
 export type InventoryFormMode = 'create' | 'edit';
 
+export type DashboardView = 'inventory' | 'add' | 'shopping';
+
 export type ShoppingMemoItem = {
   name: string;
   quantity: number;
