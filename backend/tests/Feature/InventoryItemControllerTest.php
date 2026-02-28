@@ -90,4 +90,44 @@ class InventoryItemControllerTest extends TestCase
             'note' => '特売で購入',
         ]);
     }
+
+    public function test_inventory_item_input_is_trimmed_and_empty_note_is_normalized(): void
+    {
+        $foodCategory = Category::query()->create([
+            'id' => (string) Str::uuid(),
+            'name' => '食品',
+            'slug' => 'foods',
+            'sort_order' => 1,
+        ]);
+
+        $roomStorage = StorageLocation::query()->create([
+            'id' => (string) Str::uuid(),
+            'name' => '常温',
+            'slug' => 'room-temperature',
+            'sort_order' => 1,
+        ]);
+
+        $response = $this->postJson('/api/inventory-items', [
+            'name' => '  お米  ',
+            'categoryId' => $foodCategory->id,
+            'storageLocationId' => $roomStorage->id,
+            'quantity' => 2,
+            'threshold' => 1,
+            'unit' => '  袋  ',
+            'expiresAt' => null,
+            'note' => '   ',
+        ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'お米')
+            ->assertJsonPath('data.unit', '袋')
+            ->assertJsonPath('data.note', '');
+
+        $this->assertDatabaseHas('inventory_items', [
+            'name' => 'お米',
+            'unit' => '袋',
+            'note' => null,
+        ]);
+    }
 }

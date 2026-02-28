@@ -13,6 +13,17 @@ class InventoryDashboardControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_dashboard_endpoint_sets_security_headers(): void
+    {
+        $response = $this->getJson('/api/inventory-dashboard');
+
+        $response
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertHeader('Referrer-Policy', 'no-referrer')
+            ->assertHeader('Cache-Control', 'no-store, private');
+    }
+
     public function test_dashboard_endpoint_returns_grouped_inventory_and_shopping_list(): void
     {
         $foodCategory = Category::query()->create([
@@ -95,5 +106,18 @@ class InventoryDashboardControllerTest extends TestCase
             ->assertJsonPath('data.summary.lowStock', 2)
             ->assertJsonPath('data.summary.expiringSoon', 1)
             ->assertJsonPath('data.summary.totalQuantity', 4);
+    }
+
+    public function test_dashboard_endpoint_is_rate_limited(): void
+    {
+        for ($index = 0; $index < 60; $index++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.1'])
+                ->getJson('/api/inventory-dashboard')
+                ->assertOk();
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.1'])
+            ->getJson('/api/inventory-dashboard')
+            ->assertStatus(429);
     }
 }
