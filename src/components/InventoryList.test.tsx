@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { metadataFixture, stockItemsFixture } from '../test/fixtures';
+import { groupInventoryItems } from '../utils/inventorySelectors';
 import { InventoryList } from './InventoryList';
 
 describe('InventoryList', () => {
@@ -10,7 +11,7 @@ describe('InventoryList', () => {
       <InventoryList
         categories={metadataFixture.categories}
         editingItemId={null}
-        filteredItems={stockItemsFixture}
+        groupedItems={groupInventoryItems(stockItemsFixture)}
         isLoading={false}
         search=""
         selectedCategory="すべて"
@@ -27,7 +28,7 @@ describe('InventoryList', () => {
     expect(screen.getByText('期限近い')).toBeInTheDocument();
   });
 
-  it('操作ボタンでコールバックを呼び出す', async () => {
+  it('明細を開いて操作ボタンでコールバックを呼び出す', async () => {
     const user = userEvent.setup();
     const onUpdateQuantity = vi.fn();
     const onDelete = vi.fn();
@@ -37,7 +38,10 @@ describe('InventoryList', () => {
       <InventoryList
         categories={metadataFixture.categories}
         editingItemId={null}
-        filteredItems={[stockItemsFixture[0]]}
+        groupedItems={groupInventoryItems([
+          stockItemsFixture[0],
+          { ...stockItemsFixture[0], id: 'item-rice-late', expiresAt: '2026-03-06' },
+        ])}
         isLoading={false}
         search=""
         selectedCategory="すべて"
@@ -49,13 +53,14 @@ describe('InventoryList', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: '編集' }));
-    await user.click(screen.getByRole('button', { name: '+1' }));
-    await user.click(screen.getByRole('button', { name: '削除' }));
+    await user.click(screen.getByRole('button', { name: '期限別の明細を見る' }));
+    await user.click(screen.getAllByRole('button', { name: '編集' })[0]);
+    await user.click(screen.getAllByRole('button', { name: '+1' })[0]);
+    await user.click(screen.getAllByRole('button', { name: '削除' })[0]);
 
-    expect(onEdit).toHaveBeenCalledWith('item-rice');
-    expect(onUpdateQuantity).toHaveBeenCalledWith('item-rice', 1);
-    expect(onDelete).toHaveBeenCalledWith('item-rice');
+    expect(onEdit).toHaveBeenCalledWith('item-rice-late');
+    expect(onUpdateQuantity).toHaveBeenCalledWith('item-rice-late', 1);
+    expect(onDelete).toHaveBeenCalledWith('item-rice-late');
   });
 
   it('空状態と入力イベントを表示する', async () => {
@@ -67,7 +72,7 @@ describe('InventoryList', () => {
       <InventoryList
         categories={metadataFixture.categories}
         editingItemId="item-soap"
-        filteredItems={[]}
+        groupedItems={[]}
         isLoading={false}
         search=""
         selectedCategory="すべて"
