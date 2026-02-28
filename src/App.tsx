@@ -1,13 +1,18 @@
 import { FormEvent, useEffect, useState } from 'react';
 
-type Category = '食品' | '飲料' | '日用品' | '衛生用品' | 'ペット用品' | 'その他';
-type Storage = '冷蔵' | '冷凍' | '常温' | '洗面所' | '収納棚';
+type MasterRecord = {
+  id: string;
+  name: string;
+  slug: string;
+};
 
 type StockItem = {
   id: string;
   name: string;
-  category: Category;
-  storage: Storage;
+  categoryId: string;
+  categoryName: string;
+  storageLocationId: string;
+  storageLocationName: string;
   quantity: number;
   threshold: number;
   unit: string;
@@ -16,60 +21,12 @@ type StockItem = {
   note: string;
 };
 
-const STORAGE_KEY = 'home-stock-manager-items';
-
-const initialItems: StockItem[] = [
-  {
-    id: 'rice',
-    name: 'お米',
-    category: '食品',
-    storage: '常温',
-    quantity: 3,
-    threshold: 1,
-    unit: '袋',
-    expiresAt: '',
-    updatedAt: new Date().toISOString(),
-    note: '5kgを目安に管理',
-  },
-  {
-    id: 'water',
-    name: '水',
-    category: '飲料',
-    storage: '収納棚',
-    quantity: 8,
-    threshold: 4,
-    unit: '本',
-    expiresAt: '',
-    updatedAt: new Date().toISOString(),
-    note: '防災備蓄を兼ねる',
-  },
-  {
-    id: 'detergent',
-    name: '洗濯洗剤',
-    category: '日用品',
-    storage: '洗面所',
-    quantity: 2,
-    threshold: 1,
-    unit: '個',
-    expiresAt: '',
-    updatedAt: new Date().toISOString(),
-    note: '',
-  },
-];
-
-const categories: Category[] = ['食品', '飲料', '日用品', '衛生用品', 'ペット用品', 'その他'];
-const storages: Storage[] = ['冷蔵', '冷凍', '常温', '洗面所', '収納棚'];
-
-const blankForm = {
-  name: '',
-  category: '食品' as Category,
-  storage: '常温' as Storage,
-  quantity: 1,
-  threshold: 1,
-  unit: '個',
-  expiresAt: '',
-  note: '',
+type MetadataResponse = {
+  categories: MasterRecord[];
+  storageLocations: MasterRecord[];
 };
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api';
 
 function daysUntil(dateString: string) {
   if (!dateString) return null;
@@ -81,30 +38,88 @@ function daysUntil(dateString: string) {
 }
 
 function App() {
-  const [items, setItems] = useState<StockItem[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return initialItems;
-
-    try {
-      const parsed = JSON.parse(stored) as StockItem[];
-      return parsed.length > 0 ? parsed : initialItems;
-    } catch {
-      return initialItems;
-    }
-  });
-  const [selectedCategory, setSelectedCategory] = useState<'すべて' | Category>('すべて');
+  const [items, setItems] = useState<StockItem[]>([]);
+  const [categories, setCategories] = useState<MasterRecord[]>([]);
+  const [storageLocations, setStorageLocations] = useState<MasterRecord[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('すべて');
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState(blankForm);
+  const [statusMessage, setStatusMessage] = useState('Laravel API から在庫とマスタを読み込み中です。');
+  const [isLoading, setIsLoading] = useState(true);
+  const [form, setForm] = useState({
+    name: '',
+    categoryId: '',
+    storageLocationId: '',
+    quantity: 1,
+    threshold: 1,
+    unit: '個',
+    expiresAt: '',
+    note: '',
+  });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    void loadInitialData();
+  }, []);
+
+  async function loadInitialData() {
+    setIsLoading(true);
+
+    try {
+      const [itemsResponse, metadataResponse] = await Promise.all([
+        fetchJson<{ data: StockItem[] }>(`${API_BASE_URL}/inventory-items`),
+        fetchJson<{ data: MetadataResponse }>(`${API_BASE_URL}/inventory-metadata`),
+      ]);
+
+      setItems(itemsResponse.data);
+      setCategories(metadataResponse.data.categories);
+      setStorageLocations(metadataResponse.data.storageLocations);
+      setSelectedCategory('すべて');
+      setForm((current) => ({
+        ...current,
+        categoryId: metadataResponse.data.categories[0]?.id ?? '',
+        storageLocationId: metadataResponse.data.storageLocations[0]?.id ?? '',
+      }));
+      setStatusMessage('Laravel API と MySQL から在庫を同期中です。');
+    } catch {
+      setItems([]);
+      setCategories([]);
+      setStorageLocations([]);
+      setStatusMessage('Laravel API に接続できません。MySQL 側の起動とシード投入を確認してください。');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+    const response = await fetch(url, {
+      ...init,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(init?.headers ?? {}),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    return (await response.json()) as T;
+  }
 
   const filteredItems = items
-    .filter((item) => selectedCategory === 'すべて' || item.category === selectedCategory)
+    .filter((item) => selectedCategory === 'すべて' || item.categoryId === selectedCategory)
     .filter((item) => {
       const query = search.trim().toLowerCase();
-      return !query || `${item.name} ${item.note} ${item.storage}`.toLowerCase().includes(query);
+      return (
+        !query ||
+        `${item.name} ${item.note} ${item.categoryName} ${item.storageLocationName}`
+          .toLowerCase()
+          .includes(query)
+      );
     })
     .sort((a, b) => {
       const aDays = daysUntil(a.expiresAt);
@@ -127,43 +142,80 @@ function App() {
 
   const shoppingList = items.filter((item) => item.quantity <= item.threshold);
 
-  function updateQuantity(id: string, delta: number) {
-    setItems((current) =>
-      current.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              quantity: Math.max(0, item.quantity + delta),
-              updatedAt: new Date().toISOString(),
-            }
-          : item,
-      ),
-    );
+  async function createItem(payload: typeof form) {
+    const response = await fetchJson<{ data: StockItem }>(`${API_BASE_URL}/inventory-items`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    return response.data;
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function patchItem(id: string, payload: Partial<typeof form>) {
+    const response = await fetchJson<{ data: StockItem }>(`${API_BASE_URL}/inventory-items/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+
+    return response.data;
+  }
+
+  async function removeItem(id: string) {
+    await fetchJson(`${API_BASE_URL}/inventory-items/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async function updateQuantity(id: string, delta: number) {
+    const targetItem = items.find((item) => item.id === id);
+    if (!targetItem) return;
+
+    try {
+      const savedItem = await patchItem(id, { quantity: Math.max(0, targetItem.quantity + delta) });
+      setItems((current) => current.map((item) => (item.id === id ? savedItem : item)));
+      setStatusMessage('MySQL の在庫を更新しました。');
+    } catch {
+      setStatusMessage('数量更新に失敗しました。Laravel API と MySQL を確認してください。');
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!form.name.trim()) return;
+    if (!form.name.trim() || !form.categoryId || !form.storageLocationId) return;
 
-    const newItem: StockItem = {
-      id: crypto.randomUUID(),
-      name: form.name.trim(),
-      category: form.category,
-      storage: form.storage,
-      quantity: Number(form.quantity),
-      threshold: Number(form.threshold),
-      unit: form.unit.trim() || '個',
-      expiresAt: form.expiresAt,
-      updatedAt: new Date().toISOString(),
-      note: form.note.trim(),
-    };
+    try {
+      const savedItem = await createItem({
+        ...form,
+        name: form.name.trim(),
+        unit: form.unit.trim() || '個',
+        note: form.note.trim(),
+      });
 
-    setItems((current) => [newItem, ...current]);
-    setForm(blankForm);
+      setItems((current) => [savedItem, ...current]);
+      setStatusMessage('在庫を MySQL に追加しました。');
+      setForm({
+        name: '',
+        categoryId: categories[0]?.id ?? '',
+        storageLocationId: storageLocations[0]?.id ?? '',
+        quantity: 1,
+        threshold: 1,
+        unit: '個',
+        expiresAt: '',
+        note: '',
+      });
+    } catch {
+      setStatusMessage('在庫追加に失敗しました。Laravel API と MySQL を確認してください。');
+    }
   }
 
-  function handleDelete(id: string) {
-    setItems((current) => current.filter((item) => item.id !== id));
+  async function handleDelete(id: string) {
+    try {
+      await removeItem(id);
+      setItems((current) => current.filter((item) => item.id !== id));
+      setStatusMessage('在庫を MySQL から削除しました。');
+    } catch {
+      setStatusMessage('削除に失敗しました。Laravel API と MySQL を確認してください。');
+    }
   }
 
   return (
@@ -173,8 +225,9 @@ function App() {
           <p className="eyebrow">Home Inventory</p>
           <h1>うちの在庫ノート</h1>
           <p className="hero-copy">
-            食品も日用品も、家庭で管理しやすい単位で見える化。残量不足と期限切れ前を先回りで拾います。
+            家庭の食品と日用品を MySQL に一元保存。カテゴリや保管場所の選択肢も Laravel の seed データから読み込みます。
           </p>
+          <p className="sync-badge api">{statusMessage}</p>
         </div>
         <div className="summary-grid">
           <article className="summary-card warm">
@@ -199,7 +252,7 @@ function App() {
         <div className="panel form-panel">
           <div className="panel-heading">
             <h2>在庫を追加</h2>
-            <p>買ってきた物をその場で登録</p>
+            <p>マスタ選択肢も MySQL から取得</p>
           </div>
           <form className="stock-form" onSubmit={handleSubmit}>
             <label>
@@ -214,14 +267,13 @@ function App() {
               <label>
                 カテゴリ
                 <select
-                  value={form.category}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, category: event.target.value as Category }))
-                  }
+                  value={form.categoryId}
+                  onChange={(event) => setForm((current) => ({ ...current, categoryId: event.target.value }))}
+                  disabled={categories.length === 0}
                 >
                   {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -229,14 +281,15 @@ function App() {
               <label>
                 保管場所
                 <select
-                  value={form.storage}
+                  value={form.storageLocationId}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, storage: event.target.value as Storage }))
+                    setForm((current) => ({ ...current, storageLocationId: event.target.value }))
                   }
+                  disabled={storageLocations.length === 0}
                 >
-                  {storages.map((storage) => (
-                    <option key={storage} value={storage}>
-                      {storage}
+                  {storageLocations.map((storageLocation) => (
+                    <option key={storageLocation.id} value={storageLocation.id}>
+                      {storageLocation.name}
                     </option>
                   ))}
                 </select>
@@ -287,7 +340,7 @@ function App() {
                 />
               </label>
             </div>
-            <button className="primary-button" type="submit">
+            <button className="primary-button" type="submit" disabled={isLoading || categories.length === 0}>
               在庫に追加
             </button>
           </form>
@@ -305,13 +358,17 @@ function App() {
                   className="search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="品名・メモ・保管場所で検索"
+                  placeholder="品名・メモ・カテゴリ・保管場所で検索"
                 />
-                <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value as 'すべて' | Category)}>
+                <select
+                  value={selectedCategory}
+                  onChange={(event) => setSelectedCategory(event.target.value)}
+                  disabled={categories.length === 0}
+                >
                   <option value="すべて">すべて</option>
                   {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -330,8 +387,8 @@ function App() {
                       <div className="item-title-row">
                         <h3>{item.name}</h3>
                         <div className="tag-row">
-                          <span className="tag">{item.category}</span>
-                          <span className="tag">{item.storage}</span>
+                          <span className="tag">{item.categoryName}</span>
+                          <span className="tag">{item.storageLocationName}</span>
                           {lowStock && <span className="tag alert">不足</span>}
                           {expiring && <span className="tag caution">期限近い</span>}
                         </div>
@@ -354,22 +411,29 @@ function App() {
                       {item.note && <p className="note">{item.note}</p>}
                     </div>
                     <div className="item-actions">
-                      <button onClick={() => updateQuantity(item.id, -1)}>-1</button>
-                      <button onClick={() => updateQuantity(item.id, 1)}>+1</button>
-                      <button className="ghost-danger" onClick={() => handleDelete(item.id)}>
+                      <button type="button" onClick={() => void updateQuantity(item.id, -1)}>
+                        -1
+                      </button>
+                      <button type="button" onClick={() => void updateQuantity(item.id, 1)}>
+                        +1
+                      </button>
+                      <button type="button" className="ghost-danger" onClick={() => void handleDelete(item.id)}>
                         削除
                       </button>
                     </div>
                   </article>
                 );
               })}
+              {!isLoading && filteredItems.length === 0 && (
+                <p className="empty-state">MySQL に在庫がまだありません。seed または追加フォームから登録してください。</p>
+              )}
             </div>
           </div>
 
           <div className="panel">
             <div className="panel-heading">
               <h2>買い物メモ</h2>
-              <p>下限以下の在庫を自動抽出</p>
+              <p>下限以下の在庫を MySQL から抽出</p>
             </div>
             <div className="shopping-list">
               {shoppingList.length === 0 ? (

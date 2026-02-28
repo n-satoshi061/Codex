@@ -67,6 +67,19 @@ h1 {
   color: #36516f;
 }
 
+.sync-badge {
+  display: inline-flex;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+}
+
+.sync-badge.api {
+  background: rgba(206, 242, 221, 0.9);
+  color: #166534;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
