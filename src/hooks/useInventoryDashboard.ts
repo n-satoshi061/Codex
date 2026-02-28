@@ -16,7 +16,7 @@ export const useInventoryDashboard = () => {
   const [storageLocations, setStorageLocations] = useState<MasterRecord[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('すべて');
   const [search, setSearch] = useState('');
-  const [statusMessage, setStatusMessage] = useState('Laravel API から在庫とマスタを読み込み中です。');
+  const [statusMessage, setStatusMessage] = useState('在庫情報を読み込んでいます。');
   const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState<InventoryFormState>(createInitialForm());
 
@@ -63,11 +63,11 @@ export const useInventoryDashboard = () => {
     }
 
     if (metadataResult.status === 'fulfilled' && itemsResult.status === 'fulfilled') {
-      setStatusMessage('Laravel API と MySQL から在庫を同期中です。');
+      setStatusMessage('最新の在庫情報を表示しています。');
     } else if (metadataResult.status === 'fulfilled') {
-      setStatusMessage('マスタは取得できましたが、在庫一覧の取得に失敗しました。MySQL の在庫データを確認してください。');
+      setStatusMessage('項目は表示できていますが、在庫一覧を読み込めませんでした。時間をおいて再度お試しください。');
     } else {
-      setStatusMessage('Laravel API に接続できません。MySQL 側の起動とシード投入を確認してください。');
+      setStatusMessage('サーバーが応答しません。管理者に問い合わせてください。');
     }
 
     setIsLoading(false);
@@ -82,9 +82,9 @@ export const useInventoryDashboard = () => {
         quantity: Math.max(0, targetItem.quantity + delta),
       });
       setItems((current) => current.map((item) => (item.id === id ? savedItem : item)));
-      setStatusMessage('MySQL の在庫を更新しました。');
+      setStatusMessage('在庫数を更新しました。');
     } catch {
-      setStatusMessage('数量更新に失敗しました。Laravel API と MySQL を確認してください。');
+      setStatusMessage('在庫数を更新できませんでした。時間をおいて再度お試しください。');
     }
   };
 
@@ -101,10 +101,10 @@ export const useInventoryDashboard = () => {
       });
 
       setItems((current) => [savedItem, ...current]);
-      setStatusMessage('在庫を MySQL に追加しました。');
+      setStatusMessage('在庫を追加しました。');
       setForm(createInitialForm(categories, storageLocations));
     } catch {
-      setStatusMessage('在庫追加に失敗しました。Laravel API と MySQL を確認してください。');
+      setStatusMessage('在庫を追加できませんでした。時間をおいて再度お試しください。');
     }
   };
 
@@ -112,9 +112,9 @@ export const useInventoryDashboard = () => {
     try {
       await deleteInventoryItem(id);
       setItems((current) => current.filter((item) => item.id !== id));
-      setStatusMessage('在庫を MySQL から削除しました。');
+      setStatusMessage('在庫を削除しました。');
     } catch {
-      setStatusMessage('削除に失敗しました。Laravel API と MySQL を確認してください。');
+      setStatusMessage('在庫を削除できませんでした。時間をおいて再度お試しください。');
     }
   };
 
