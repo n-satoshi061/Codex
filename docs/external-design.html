@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>うちの在庫ノート 外部設計書</title>
+    <style>
+      body {
+        font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+        font-size: 12pt;
+        line-height: 1.7;
+        color: #111;
+        margin: 32px;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4 {
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+      }
+
+      h1 {
+        font-size: 22pt;
+      }
+
+      h2 {
+        font-size: 18pt;
+        border-bottom: 1px solid #999;
+        padding-bottom: 4px;
+      }
+
+      h3 {
+        font-size: 15pt;
+      }
+
+      h4 {
+        font-size: 13pt;
+      }
+
+      p,
+      li {
+        margin: 0.3em 0;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 20px;
+      }
+
+      th,
+      td {
+        border: 1px solid #888;
+        padding: 8px;
+        vertical-align: top;
+      }
+
+      th {
+        background: #f2f2f2;
+        text-align: left;
+      }
+
+      code,
+      pre {
+        font-family: "Menlo", "Consolas", monospace;
+      }
+
+      pre {
+        white-space: pre-wrap;
+        border: 1px solid #ccc;
+        background: #fafafa;
+        padding: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>うちの在庫ノート 外部設計書</h1>
+
+    <h2>1. 目的</h2>
+    <p>家庭内の食品や日用品の在庫を一元管理し、残量不足や期限切れ前の品目を把握しやすくする。</p>
+
+    <h2>2. 対象利用者</h2>
+    <ul>
+      <li>家庭内の買い置きや備蓄を管理したい一般利用者</li>
+      <li>補充対象を見ながら買い物したい利用者</li>
+    </ul>
+
+    <h2>3. システム概要</h2>
+    <p>本システムは、フロントエンドから在庫情報を登録・参照し、サーバー経由で在庫データを保存する家庭向け在庫管理アプリである。</p>
+    <ul>
+      <li>フロントエンド: React</li>
+      <li>バックエンド: Laravel API</li>
+      <li>データベース: MySQL</li>
+    </ul>
+
+    <h2>4. 画面一覧</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>画面ID</th>
+          <th>画面名</th>
+          <th>概要</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SCR-01</td>
+          <td>在庫管理画面</td>
+          <td>在庫登録、在庫一覧表示、検索、絞り込み、数量更新、削除、買い物メモ表示を行う</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. 画面設計</h2>
+    <h3>5.1 SCR-01 在庫管理画面</h3>
+
+    <h4>5.1.1 画面概要</h4>
+    <p>1 画面で在庫登録、在庫確認、買い物メモ確認を行う。</p>
+
+    <h4>5.1.2 画面構成</h4>
+    <ol>
+      <li>ヘッダー領域</li>
+      <li>サマリー領域</li>
+      <li>在庫登録フォーム領域</li>
+      <li>在庫一覧領域</li>
+      <li>買い物メモ領域</li>
+    </ol>
+
+    <h4>5.1.3 表示項目</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>項目名</th>
+          <th>内容</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>タイトル</td><td>アプリ名を表示する</td></tr>
+        <tr><td>状態メッセージ</td><td>読み込み状況や更新結果を一般ユーザー向け文言で表示する</td></tr>
+        <tr><td>不足気味件数</td><td>数量 &lt;= 下限値 の件数を表示する</td></tr>
+        <tr><td>期限が近い件数</td><td>期限が 7 日以内の件数を表示する</td></tr>
+        <tr><td>総数量</td><td>在庫数量の合計を表示する</td></tr>
+        <tr><td>在庫一覧件数</td><td>現在表示中の在庫件数を表示する</td></tr>
+        <tr><td>買い物メモ</td><td>補充対象の在庫を一覧表示する</td></tr>
+      </tbody>
+    </table>
+
+    <h4>5.1.4 入力項目</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>項目名</th>
+          <th>必須</th>
+          <th>形式</th>
+          <th>説明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>品名</td><td>必須</td><td>文字列</td><td>在庫名</td></tr>
+        <tr><td>カテゴリ</td><td>必須</td><td>選択</td><td>DB のカテゴリマスタから取得</td></tr>
+        <tr><td>保管場所</td><td>必須</td><td>選択</td><td>DB の保管場所マスタから取得</td></tr>
+        <tr><td>数量</td><td>必須</td><td>数値</td><td>0 以上の整数</td></tr>
+        <tr><td>単位</td><td>必須</td><td>文字列</td><td>例: 個、本、袋</td></tr>
+        <tr><td>下限</td><td>必須</td><td>数値</td><td>補充目安となる数量</td></tr>
+        <tr><td>賞味・使用期限</td><td>任意</td><td>日付</td><td>期限日</td></tr>
+        <tr><td>メモ</td><td>任意</td><td>文字列</td><td>補足情報</td></tr>
+        <tr><td>検索キーワード</td><td>任意</td><td>文字列</td><td>品名、メモ、カテゴリ、保管場所で検索</td></tr>
+        <tr><td>カテゴリ絞り込み</td><td>任意</td><td>選択</td><td>在庫一覧の絞り込み条件</td></tr>
+      </tbody>
+    </table>
+
+    <h4>5.1.5 操作一覧</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>操作</th>
+          <th>説明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>在庫に追加</td><td>入力内容を登録する</td></tr>
+        <tr><td>-1 ボタン</td><td>対象在庫の数量を 1 減らす</td></tr>
+        <tr><td>+1 ボタン</td><td>対象在庫の数量を 1 増やす</td></tr>
+        <tr><td>削除ボタン</td><td>対象在庫を削除する</td></tr>
+        <tr><td>検索入力</td><td>在庫一覧をキーワードで絞り込む</td></tr>
+        <tr><td>カテゴリ選択</td><td>在庫一覧をカテゴリで絞り込む</td></tr>
+      </tbody>
+    </table>
+
+    <h4>5.1.6 表示ルール</h4>
+    <ul>
+      <li>不足在庫は「不足」タグを表示する</li>
+      <li>期限が 7 日以内の在庫は「期限近い」タグを表示する</li>
+      <li>期限未設定の場合は「期限設定なし」と表示する</li>
+      <li>在庫が 0 件の場合は空状態メッセージを表示する</li>
+    </ul>
+
+    <h4>5.1.7 並び順</h4>
+    <ol>
+      <li>不足在庫を先頭表示</li>
+      <li>期限が近い順</li>
+      <li>品名昇順</li>
+    </ol>
+
+    <h2>6. 機能一覧</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>機能ID</th>
+          <th>機能名</th>
+          <th>概要</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>F-01</td><td>初期表示</td><td>カテゴリ、保管場所、在庫一覧を取得して画面に表示する</td></tr>
+        <tr><td>F-02</td><td>在庫登録</td><td>入力フォームから在庫を新規登録する</td></tr>
+        <tr><td>F-03</td><td>在庫一覧表示</td><td>在庫を一覧表示する</td></tr>
+        <tr><td>F-04</td><td>在庫検索</td><td>キーワードで在庫を絞り込む</td></tr>
+        <tr><td>F-05</td><td>カテゴリ絞り込み</td><td>カテゴリ単位で在庫を絞り込む</td></tr>
+        <tr><td>F-06</td><td>数量更新</td><td>ボタン操作で数量を増減する</td></tr>
+        <tr><td>F-07</td><td>在庫削除</td><td>不要在庫を削除する</td></tr>
+        <tr><td>F-08</td><td>買い物メモ表示</td><td>下限以下の在庫を買い物メモとして表示する</td></tr>
+      </tbody>
+    </table>
+
+    <h2>7. 入出力インターフェース設計</h2>
+    <h3>7.1 API 一覧</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>API ID</th>
+          <th>メソッド</th>
+          <th>パス</th>
+          <th>用途</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>API-01</td><td>GET</td><td>/api/inventory-metadata</td><td>カテゴリ、保管場所マスタ取得</td></tr>
+        <tr><td>API-02</td><td>GET</td><td>/api/inventory-items</td><td>在庫一覧取得</td></tr>
+        <tr><td>API-03</td><td>POST</td><td>/api/inventory-items</td><td>在庫新規登録</td></tr>
+        <tr><td>API-04</td><td>PATCH</td><td>/api/inventory-items/{inventoryItem}</td><td>在庫更新</td></tr>
+        <tr><td>API-05</td><td>DELETE</td><td>/api/inventory-items/{inventoryItem}</td><td>在庫削除</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.2 API 詳細</h3>
+    <h4>API-01 カテゴリ・保管場所取得</h4>
+    <p>メソッド: GET</p>
+    <p>パス: /api/inventory-metadata</p>
+    <pre>{
+  "data": {
+    "categories": [
+      { "id": "uuid", "name": "食品", "slug": "foods" }
+    ],
+    "storageLocations": [
+      { "id": "uuid", "name": "常温", "slug": "room-temperature" }
+    ]
+  }
+}</pre>
+
+    <h4>API-02 在庫一覧取得</h4>
+    <p>メソッド: GET</p>
+    <p>パス: /api/inventory-items</p>
+    <pre>{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "お米",
+      "categoryId": "uuid",
+      "categoryName": "食品",
+      "storageLocationId": "uuid",
+      "storageLocationName": "常温",
+      "quantity": 1,
+      "threshold": 2,
+      "unit": "袋",
+      "expiresAt": null,
+      "updatedAt": "2026-02-28T00:00:00.000Z",
+      "note": "5kg"
+    }
+  ]
+}</pre>
+
+    <h4>API-03 在庫新規登録</h4>
+    <p>メソッド: POST</p>
+    <p>パス: /api/inventory-items</p>
+    <pre>{
+  "name": "お米",
+  "categoryId": "uuid",
+  "storageLocationId": "uuid",
+  "quantity": 1,
+  "threshold": 2,
+  "unit": "袋",
+  "expiresAt": "2026-03-10",
+  "note": "特売品"
+}</pre>
+
+    <h4>API-04 在庫更新</h4>
+    <p>メソッド: PATCH</p>
+    <p>パス: /api/inventory-items/{inventoryItem}</p>
+    <ul>
+      <li>数量更新</li>
+      <li>各入力項目の変更</li>
+    </ul>
+
+    <h4>API-05 在庫削除</h4>
+    <p>メソッド: DELETE</p>
+    <p>パス: /api/inventory-items/{inventoryItem}</p>
+
+    <h2>8. バリデーション設計</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>ルール</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>品名</td><td>必須、255 文字以内</td></tr>
+        <tr><td>カテゴリID</td><td>必須、UUID、カテゴリマスタに存在すること</td></tr>
+        <tr><td>保管場所ID</td><td>必須、UUID、保管場所マスタに存在すること</td></tr>
+        <tr><td>数量</td><td>必須、整数、0 以上</td></tr>
+        <tr><td>下限</td><td>必須、整数、0 以上</td></tr>
+        <tr><td>単位</td><td>必須、30 文字以内</td></tr>
+        <tr><td>期限</td><td>任意、日付形式</td></tr>
+        <tr><td>メモ</td><td>任意、1000 文字以内</td></tr>
+      </tbody>
+    </table>
+
+    <h2>9. エラー表示方針</h2>
+    <ul>
+      <li>利用者には技術名を表示しない</li>
+      <li>通信失敗時は「サーバーが応答しません。管理者に問い合わせてください。」と表示する</li>
+      <li>更新失敗時は「時間をおいて再度お試しください。」を基本とする</li>
+      <li>入力不足時は送信を行わず、操作対象を維持する</li>
+    </ul>
+
+    <h2>10. 非機能要件</h2>
+    <h3>10.1 操作性</h3>
+    <ul>
+      <li>1 画面で主要操作を完結できること</li>
+      <li>スマートフォン幅でも利用できること</li>
+    </ul>
+
+    <h3>10.2 可用性</h3>
+    <ul>
+      <li>サーバー未応答時は画面が異常終了せず、利用者向けメッセージを表示すること</li>
+    </ul>
+
+    <h3>10.3 保守性</h3>
+    <ul>
+      <li>フロントエンドはコンポーネント、フック、サービス、ユーティリティに責務分離すること</li>
+      <li>テストで主要な状態遷移と画面操作を担保すること</li>
+    </ul>
+
+    <h2>11. 画面遷移</h2>
+    <p>本システムは単一画面構成とする。</p>
+    <ul>
+      <li>SCR-01 在庫管理画面</li>
+      <li>在庫登録</li>
+      <li>在庫検索・絞り込み</li>
+      <li>数量更新</li>
+      <li>在庫削除</li>
+      <li>買い物メモ確認</li>
+    </ul>
+  </body>
+  </html>
