@@ -1,12 +1,12 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { metadataFixture, stockItemsFixture } from '../test/fixtures';
+import { dashboardFixture, metadataFixture, stockItemsFixture } from '../test/fixtures';
 import { useInventoryDashboard } from './useInventoryDashboard';
 
 vi.mock('../services/inventoryApi', () => ({
   createInventoryItem: vi.fn(),
   deleteInventoryItem: vi.fn(),
-  fetchInventoryItems: vi.fn(),
+  fetchInventoryDashboard: vi.fn(),
   fetchInventoryMetadata: vi.fn(),
   updateInventoryItem: vi.fn(),
 }));
@@ -14,7 +14,7 @@ vi.mock('../services/inventoryApi', () => ({
 import {
   createInventoryItem,
   deleteInventoryItem,
-  fetchInventoryItems,
+  fetchInventoryDashboard,
   fetchInventoryMetadata,
   updateInventoryItem,
 } from '../services/inventoryApi';
@@ -23,7 +23,7 @@ describe('useInventoryDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(fetchInventoryMetadata).mockResolvedValue(metadataFixture);
-    vi.mocked(fetchInventoryItems).mockResolvedValue(stockItemsFixture);
+    vi.mocked(fetchInventoryDashboard).mockResolvedValue(dashboardFixture);
   });
 
   it('初期ロードで表示用データを組み立てる', async () => {
@@ -34,14 +34,15 @@ describe('useInventoryDashboard', () => {
     });
 
     expect(result.current.categories).toEqual(metadataFixture.categories);
-    expect(result.current.filteredItems).toHaveLength(2);
+    expect(result.current.items).toHaveLength(2);
+    expect(result.current.groupedItems).toHaveLength(2);
     expect(result.current.shoppingList).toHaveLength(1);
     expect(result.current.form.categoryId).toBe('cat-food');
     expect(result.current.statusMessage).toBe('最新の在庫情報を表示しています。');
   });
 
   it('項目だけ取得できた場合は案内文言を切り替える', async () => {
-    vi.mocked(fetchInventoryItems).mockRejectedValue(new Error('failed'));
+    vi.mocked(fetchInventoryDashboard).mockRejectedValue(new Error('failed'));
 
     const { result } = renderHook(() => useInventoryDashboard());
 
@@ -50,7 +51,7 @@ describe('useInventoryDashboard', () => {
     });
 
     expect(result.current.categories).toEqual(metadataFixture.categories);
-    expect(result.current.filteredItems).toEqual([]);
+    expect(result.current.items).toEqual([]);
     expect(result.current.statusMessage).toBe(
       '項目は表示できていますが、在庫一覧を読み込めませんでした。時間をおいて再度お試しください。',
     );
@@ -58,7 +59,7 @@ describe('useInventoryDashboard', () => {
 
   it('初期ロードが失敗した場合は接続エラー文言を返す', async () => {
     vi.mocked(fetchInventoryMetadata).mockRejectedValue(new Error('failed'));
-    vi.mocked(fetchInventoryItems).mockRejectedValue(new Error('failed'));
+    vi.mocked(fetchInventoryDashboard).mockRejectedValue(new Error('failed'));
 
     const { result } = renderHook(() => useInventoryDashboard());
 
@@ -76,6 +77,12 @@ describe('useInventoryDashboard', () => {
       ...stockItemsFixture[0],
       quantity: 4,
     });
+    vi.mocked(fetchInventoryDashboard)
+      .mockResolvedValueOnce(dashboardFixture)
+      .mockResolvedValueOnce({
+        ...dashboardFixture,
+        items: [{ ...dashboardFixture.items[0], quantity: 4, effectiveQuantity: 4 }, dashboardFixture.items[1]],
+      });
 
     const { result } = renderHook(() => useInventoryDashboard());
 
@@ -87,9 +94,10 @@ describe('useInventoryDashboard', () => {
       await result.current.updateQuantity('item-rice', 3);
     });
 
-    const updatedItem = result.current.filteredItems.find((item) => item.id === 'item-rice');
+    const updatedItem = result.current.items.find((item) => item.id === 'item-rice');
 
     expect(updateInventoryItem).toHaveBeenCalledWith('item-rice', { quantity: 4 });
+    expect(fetchInventoryDashboard).toHaveBeenLastCalledWith('', 'すべて', expect.any(AbortSignal));
     expect(updatedItem?.quantity).toBe(4);
     expect(result.current.statusMessage).toBe('在庫数を更新しました。');
   });
@@ -112,6 +120,13 @@ describe('useInventoryDashboard', () => {
 
   it('削除成功時に在庫一覧から取り除く', async () => {
     vi.mocked(deleteInventoryItem).mockResolvedValue(undefined);
+    vi.mocked(fetchInventoryDashboard)
+      .mockResolvedValueOnce(dashboardFixture)
+      .mockResolvedValueOnce({
+        ...dashboardFixture,
+        items: [dashboardFixture.items[1]],
+        groupedItems: [dashboardFixture.groupedItems[1]],
+      });
 
     const { result } = renderHook(() => useInventoryDashboard());
 
@@ -123,7 +138,7 @@ describe('useInventoryDashboard', () => {
       await result.current.deleteItem('item-rice');
     });
 
-    expect(result.current.filteredItems.find((item) => item.id === 'item-rice')).toBeUndefined();
+    expect(result.current.items.find((item) => item.id === 'item-rice')).toBeUndefined();
     expect(result.current.statusMessage).toBe('在庫を削除しました。');
   });
 
@@ -199,6 +214,28 @@ describe('useInventoryDashboard', () => {
       expiresAt: '2026-04-15',
       note: '入れ替え済み',
     });
+    vi.mocked(fetchInventoryDashboard)
+      .mockResolvedValueOnce(dashboardFixture)
+      .mockResolvedValueOnce({
+        ...dashboardFixture,
+        items: [
+          {
+            ...dashboardFixture.items[0],
+            name: '無洗米',
+            categoryId: 'cat-daily',
+            categoryName: '日用品',
+            storageLocationId: 'storage-bath',
+            storageLocationName: '洗面所',
+            quantity: 5,
+            effectiveQuantity: 5,
+            threshold: 3,
+            expiresAt: '2026-04-15',
+            daysUntilExpiration: 46,
+            note: '入れ替え済み',
+          },
+          dashboardFixture.items[1],
+        ],
+      });
 
     const { result } = renderHook(() => useInventoryDashboard());
 
@@ -238,7 +275,7 @@ describe('useInventoryDashboard', () => {
     });
     expect(result.current.formMode).toBe('create');
     expect(result.current.editingItemId).toBeNull();
-    expect(result.current.filteredItems.find((item) => item.id === 'item-rice')?.name).toBe('無洗米');
+    expect(result.current.items.find((item) => item.id === 'item-rice')?.name).toBe('無洗米');
     expect(result.current.statusMessage).toBe('在庫情報を更新しました。');
   });
 
@@ -289,12 +326,16 @@ describe('useInventoryDashboard', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    act(() => {
+    await act(async () => {
       result.current.setSearch('ハンドソープ');
+    });
+
+    expect(fetchInventoryDashboard).toHaveBeenLastCalledWith('ハンドソープ', 'すべて', expect.any(AbortSignal));
+
+    await act(async () => {
       result.current.setSelectedCategory('cat-daily');
     });
 
-    expect(result.current.filteredItems).toHaveLength(1);
-    expect(result.current.filteredItems[0].id).toBe('item-soap');
+    expect(fetchInventoryDashboard).toHaveBeenLastCalledWith('ハンドソープ', 'cat-daily', expect.any(AbortSignal));
   });
 });

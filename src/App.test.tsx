@@ -2,8 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import App from './App';
-import { metadataFixture, stockItemsFixture } from './test/fixtures';
-import { groupInventoryItems, extractShoppingList, summarizeInventory } from './utils/inventorySelectors';
+import { dashboardFixture, metadataFixture } from './test/fixtures';
 
 vi.mock('./hooks/useInventoryDashboard', () => ({
   useInventoryDashboard: vi.fn(),
@@ -16,8 +15,7 @@ const createHookValue = () => ({
   categories: metadataFixture.categories,
   deleteItem: vi.fn(),
   editingItemId: null,
-  filteredItems: stockItemsFixture,
-  groupedItems: groupInventoryItems(stockItemsFixture),
+  groupedItems: dashboardFixture.groupedItems,
   form: {
     name: '',
     categoryId: metadataFixture.categories[0].id,
@@ -35,12 +33,12 @@ const createHookValue = () => ({
   setForm: vi.fn(),
   setSearch: vi.fn(),
   setSelectedCategory: vi.fn(),
-  shoppingList: extractShoppingList(stockItemsFixture),
+  shoppingList: dashboardFixture.shoppingList,
   startEditingItem: vi.fn(),
   statusMessage: '最新の在庫情報を表示しています。',
   storageLocations: metadataFixture.storageLocations,
   submitInventoryForm: vi.fn().mockResolvedValue(true),
-  summary: summarizeInventory(stockItemsFixture),
+  summary: dashboardFixture.summary,
   updateQuantity: vi.fn(),
 });
 

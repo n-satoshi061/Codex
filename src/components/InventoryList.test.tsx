@@ -1,8 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { metadataFixture, stockItemsFixture } from '../test/fixtures';
-import { groupInventoryItems } from '../utils/inventorySelectors';
+import { groupedItemsFixture, metadataFixture, stockItemsFixture } from '../test/fixtures';
 import { InventoryList } from './InventoryList';
 
 describe('InventoryList', () => {
@@ -11,7 +10,7 @@ describe('InventoryList', () => {
       <InventoryList
         categories={metadataFixture.categories}
         editingItemId={null}
-        groupedItems={groupInventoryItems(stockItemsFixture)}
+        groupedItems={groupedItemsFixture}
         isLoading={false}
         search=""
         selectedCategory="すべて"
@@ -33,7 +32,7 @@ describe('InventoryList', () => {
       <InventoryList
         categories={metadataFixture.categories}
         editingItemId={null}
-        groupedItems={groupInventoryItems([stockItemsFixture[0]])}
+        groupedItems={[groupedItemsFixture[0]]}
         isLoading={false}
         search=""
         selectedCategory="すべて"
@@ -57,15 +56,40 @@ describe('InventoryList', () => {
     const onUpdateQuantity = vi.fn();
     const onDelete = vi.fn();
     const onEdit = vi.fn();
+    const groupedRiceItems = [
+      {
+        ...stockItemsFixture[0],
+        id: 'item-rice-early',
+        expiresAt: '2026-03-02',
+        daysUntilExpiration: 2,
+        isExpiringSoon: true,
+      },
+      {
+        ...stockItemsFixture[0],
+        id: 'item-rice-late',
+        expiresAt: '2026-03-06',
+        daysUntilExpiration: 6,
+        isExpiringSoon: true,
+      },
+    ];
 
     render(
       <InventoryList
         categories={metadataFixture.categories}
         editingItemId={null}
-        groupedItems={groupInventoryItems([
-          stockItemsFixture[0],
-          { ...stockItemsFixture[0], id: 'item-rice-late', expiresAt: '2026-03-06' },
-        ])}
+        groupedItems={[
+          {
+            ...groupedItemsFixture[0],
+            quantity: 2,
+            registeredQuantity: 2,
+            threshold: 4,
+            entryCount: 2,
+            nearestExpiresAt: '2026-03-02',
+            nearestExpirationDays: 2,
+            expiringSoon: true,
+            items: groupedRiceItems,
+          },
+        ]}
         isLoading={false}
         search=""
         selectedCategory="すべて"
@@ -82,9 +106,9 @@ describe('InventoryList', () => {
     await user.click(screen.getAllByRole('button', { name: '+1' })[0]);
     await user.click(screen.getAllByRole('button', { name: '削除' })[0]);
 
-    expect(onEdit).toHaveBeenCalledWith('item-rice-late');
-    expect(onUpdateQuantity).toHaveBeenCalledWith('item-rice-late', 1);
-    expect(onDelete).toHaveBeenCalledWith('item-rice-late');
+    expect(onEdit).toHaveBeenCalledWith('item-rice-early');
+    expect(onUpdateQuantity).toHaveBeenCalledWith('item-rice-early', 1);
+    expect(onDelete).toHaveBeenCalledWith('item-rice-early');
   });
 
   it('空状態と入力イベントを表示する', async () => {
