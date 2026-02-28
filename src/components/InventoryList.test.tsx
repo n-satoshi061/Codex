@@ -50,4 +50,31 @@ describe('InventoryList', () => {
     expect(onUpdateQuantity).toHaveBeenCalledWith('item-rice', 1);
     expect(onDelete).toHaveBeenCalledWith('item-rice');
   });
+
+  it('空状態と入力イベントを表示する', async () => {
+    const user = userEvent.setup();
+    const onSearchChange = vi.fn();
+    const onSelectedCategoryChange = vi.fn();
+
+    render(
+      <InventoryList
+        categories={metadataFixture.categories}
+        filteredItems={[]}
+        isLoading={false}
+        search=""
+        selectedCategory="すべて"
+        onDelete={vi.fn()}
+        onSearchChange={onSearchChange}
+        onSelectedCategoryChange={onSelectedCategoryChange}
+        onUpdateQuantity={vi.fn()}
+      />,
+    );
+
+    await user.type(screen.getByPlaceholderText('品名・メモ・カテゴリ・保管場所で検索'), '水');
+    await user.selectOptions(screen.getByDisplayValue('すべて'), 'cat-food');
+
+    expect(screen.getByText('表示できる在庫がまだありません。追加フォームから登録してください。')).toBeInTheDocument();
+    expect(onSearchChange).toHaveBeenCalled();
+    expect(onSelectedCategoryChange).toHaveBeenCalledWith('cat-food');
+  });
 });
