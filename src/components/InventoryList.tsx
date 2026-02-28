@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { GroupedStockItem, MasterRecord } from '../types';
-import { daysUntil } from '../utils/inventory';
 import {
   ActionButton,
   DetailCard,
@@ -81,7 +80,6 @@ export const InventoryList = ({
 
       <ItemList>
         {groupedItems.map((group) => {
-          const remaining = daysUntil(group.nearestExpiresAt);
           const expanded = expandedNames.includes(group.name);
           const showDetails = expanded || group.entryCount === 1;
 
@@ -113,9 +111,9 @@ export const InventoryList = ({
                     {group.entryCount}件の在庫
                     {group.expiredCount > 0 ? ` / 期限切れ ${group.expiredCount}件` : ''}
                     {group.nearestExpiresAt
-                      ? remaining! < 0
-                        ? ` / 最短期限は${Math.abs(remaining!)}日超過`
-                        : ` / 最短期限まであと${remaining}日`
+                      ? group.nearestExpirationDays !== null && group.nearestExpirationDays < 0
+                        ? ` / 最短期限は${Math.abs(group.nearestExpirationDays)}日超過`
+                        : ` / 最短期限まであと${group.nearestExpirationDays}日`
                       : ' / 期限設定なし'}
                   </MutedText>
                   {group.entryCount > 1 && (
@@ -128,12 +126,10 @@ export const InventoryList = ({
                 {showDetails && (
                   <DetailList>
                     {group.items.map((item) => {
-                      const itemRemaining = daysUntil(item.expiresAt);
-
                       return (
                         <DetailCard key={item.id}>
                           <QuantityText>
-                            {(itemRemaining !== null && itemRemaining < 0 ? 0 : item.quantity)} {item.unit}
+                            {item.effectiveQuantity} {item.unit}
                             <span>
                               {' '}
                               登録 {item.quantity}
@@ -144,9 +140,9 @@ export const InventoryList = ({
                           </QuantityText>
                           <MutedText>
                             {item.expiresAt
-                              ? itemRemaining! < 0
-                                ? `期限切れ ${Math.abs(itemRemaining!)}日 / 在庫数には含めません`
-                                : `期限まであと${itemRemaining}日`
+                              ? item.isExpired
+                                ? `期限切れ ${Math.abs(item.daysUntilExpiration ?? 0)}日 / 在庫数には含めません`
+                                : `期限まであと${item.daysUntilExpiration}日`
                               : '期限設定なし'}
                           </MutedText>
                           {item.note && <NoteText>{item.note}</NoteText>}

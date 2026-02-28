@@ -14,7 +14,6 @@ const App = () => {
     categories,
     deleteItem,
     editingItemId,
-    filteredItems,
     groupedItems,
     form,
     formMode,

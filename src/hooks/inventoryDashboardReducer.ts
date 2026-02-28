@@ -1,4 +1,12 @@
-import { InventoryFormMode, InventoryFormState, MasterRecord, StockItem } from '../types';
+import {
+  GroupedStockItem,
+  InventoryFormMode,
+  InventoryFormState,
+  InventorySummary,
+  MasterRecord,
+  ShoppingMemoItem,
+  StockItem,
+} from '../types';
 import { createFormFromItem, createInitialForm } from '../utils/inventoryForm';
 
 export type InventoryDashboardState = {
@@ -6,12 +14,15 @@ export type InventoryDashboardState = {
   editingItemId: string | null;
   form: InventoryFormState;
   formMode: InventoryFormMode;
+  groupedItems: GroupedStockItem[];
   isLoading: boolean;
   items: StockItem[];
   search: string;
   selectedCategory: string;
+  shoppingList: ShoppingMemoItem[];
   statusMessage: string;
   storageLocations: MasterRecord[];
+  summary: InventorySummary;
 };
 
 type InventoryDashboardAction =
@@ -20,9 +31,14 @@ type InventoryDashboardAction =
       type: 'loadCompleted';
       payload: {
         categories: MasterRecord[];
+        groupedItems: GroupedStockItem[];
         items: StockItem[];
+        search: string;
+        shoppingList: ShoppingMemoItem[];
         statusMessage: string;
         storageLocations: MasterRecord[];
+        summary: InventorySummary;
+        selectedCategory: string;
       };
     }
   | { type: 'formUpdated'; updater: (current: InventoryFormState) => InventoryFormState }
@@ -30,9 +46,6 @@ type InventoryDashboardAction =
   | { type: 'editingCancelled' }
   | { type: 'searchChanged'; value: string }
   | { type: 'selectedCategoryChanged'; value: string }
-  | { type: 'itemAdded'; item: StockItem; statusMessage: string }
-  | { type: 'itemUpdated'; item: StockItem; statusMessage: string }
-  | { type: 'itemDeleted'; id: string; statusMessage: string }
   | { type: 'statusUpdated'; statusMessage: string };
 
 export const initialInventoryDashboardState: InventoryDashboardState = {
@@ -40,12 +53,19 @@ export const initialInventoryDashboardState: InventoryDashboardState = {
   editingItemId: null,
   form: createInitialForm(),
   formMode: 'create',
+  groupedItems: [],
   isLoading: true,
   items: [],
   search: '',
   selectedCategory: 'すべて',
+  shoppingList: [],
   statusMessage: '在庫情報を読み込んでいます。',
   storageLocations: [],
+  summary: {
+    expiringSoon: 0,
+    lowStock: 0,
+    totalQuantity: 0,
+  },
 };
 
 export const inventoryDashboardReducer = (
@@ -70,11 +90,15 @@ export const inventoryDashboardReducer = (
           storageLocationId: state.form.storageLocationId || action.payload.storageLocations[0]?.id || '',
         },
         formMode: 'create',
+        groupedItems: action.payload.groupedItems,
         isLoading: false,
         items: action.payload.items,
-        selectedCategory: 'すべて',
+        search: action.payload.search,
+        selectedCategory: action.payload.selectedCategory,
+        shoppingList: action.payload.shoppingList,
         statusMessage: action.payload.statusMessage,
         storageLocations: action.payload.storageLocations,
+        summary: action.payload.summary,
       };
     case 'formUpdated':
       return {
@@ -106,30 +130,6 @@ export const inventoryDashboardReducer = (
       return {
         ...state,
         selectedCategory: action.value,
-      };
-    case 'itemAdded':
-      return {
-        ...state,
-        editingItemId: null,
-        form: createInitialForm(state.categories, state.storageLocations),
-        formMode: 'create',
-        items: [action.item, ...state.items],
-        statusMessage: action.statusMessage,
-      };
-    case 'itemUpdated':
-      return {
-        ...state,
-        editingItemId: null,
-        form: createInitialForm(state.categories, state.storageLocations),
-        formMode: 'create',
-        items: state.items.map((item) => (item.id === action.item.id ? action.item : item)),
-        statusMessage: action.statusMessage,
-      };
-    case 'itemDeleted':
-      return {
-        ...state,
-        items: state.items.filter((item) => item.id !== action.id),
-        statusMessage: action.statusMessage,
       };
     case 'statusUpdated':
       return {

@@ -1,4 +1,9 @@
-import { InventoryFormState, MetadataResponse, StockItem } from '../types';
+import {
+  InventoryDashboardResponse,
+  InventoryFormState,
+  MetadataResponse,
+  StockItem,
+} from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api';
 
@@ -23,8 +28,26 @@ const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   return (await response.json()) as T;
 };
 
-export const fetchInventoryItems = async (signal?: AbortSignal) => {
-  const response = await fetchJson<{ data: StockItem[] }>(`${API_BASE_URL}/inventory-items`, { signal });
+export const fetchInventoryDashboard = async (
+  search: string,
+  categoryId: string,
+  signal?: AbortSignal,
+) => {
+  const params = new URLSearchParams();
+
+  if (search.trim()) {
+    params.set('search', search.trim());
+  }
+
+  if (categoryId && categoryId !== 'すべて') {
+    params.set('categoryId', categoryId);
+  }
+
+  const query = params.toString();
+  const response = await fetchJson<{ data: InventoryDashboardResponse }>(
+    `${API_BASE_URL}/inventory-dashboard${query ? `?${query}` : ''}`,
+    { signal },
+  );
   return response.data;
 };
 

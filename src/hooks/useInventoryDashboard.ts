@@ -1,8 +1,8 @@
-import { FormEvent, useEffect, useMemo, useReducer, useRef } from 'react';
+import { FormEvent, useEffect, useReducer, useRef } from 'react';
 import {
   createInventoryItem,
   deleteInventoryItem,
-  fetchInventoryItems,
+  fetchInventoryDashboard,
   fetchInventoryMetadata,
   updateInventoryItem,
 } from '../services/inventoryApi';
@@ -11,12 +11,6 @@ import {
   initialInventoryDashboardState,
   inventoryDashboardReducer,
 } from './inventoryDashboardReducer';
-import {
-  extractShoppingList,
-  filterInventoryItems,
-  groupInventoryItems,
-  summarizeInventory,
-} from '../utils/inventorySelectors';
 
 export const useInventoryDashboard = () => {
   const [state, dispatch] = useReducer(
@@ -24,43 +18,89 @@ export const useInventoryDashboard = () => {
     initialInventoryDashboardState,
   );
   const stateRef = useRef(state);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   stateRef.current = state;
 
   useEffect(() => {
-    const abortController = new AbortController();
-    void loadInitialData(abortController.signal);
+    void loadInitialData();
 
     return () => {
-      abortController.abort();
+      abortControllerRef.current?.abort();
     };
   }, []);
 
-  const filteredItems = useMemo(
-    () => filterInventoryItems(state.items, state.selectedCategory, state.search),
-    [state.items, state.search, state.selectedCategory],
-  );
-  const groupedItems = useMemo(() => groupInventoryItems(filteredItems), [filteredItems]);
+  const loadDashboard = async (
+    search: string,
+    selectedCategory: string,
+    statusMessage?: string,
+  ) => {
+    abortControllerRef.current?.abort();
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
-  const summary = useMemo(() => summarizeInventory(state.items), [state.items]);
-  const shoppingList = useMemo(() => extractShoppingList(state.items), [state.items]);
+    try {
+      const dashboard = await fetchInventoryDashboard(search, selectedCategory, abortController.signal);
 
-  const loadInitialData = async (signal: AbortSignal) => {
+      if (abortController.signal.aborted) {
+        return;
+      }
+
+      dispatch({
+        type: 'loadCompleted',
+        payload: {
+          categories: stateRef.current.categories,
+          groupedItems: dashboard.groupedItems,
+          items: dashboard.items,
+          search,
+          shoppingList: dashboard.shoppingList,
+          selectedCategory,
+          statusMessage: statusMessage ?? '最新の在庫情報を表示しています。',
+          storageLocations: stateRef.current.storageLocations,
+          summary: dashboard.summary,
+        },
+      });
+    } catch {
+      if (abortController.signal.aborted) {
+        return;
+      }
+
+      dispatch({
+        type: 'statusUpdated',
+        statusMessage: '在庫一覧を読み込めませんでした。時間をおいて再度お試しください。',
+      });
+    }
+  };
+
+  const loadInitialData = async () => {
     dispatch({ type: 'loadStarted' });
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     const [metadataResult, itemsResult] = await Promise.allSettled([
-      fetchInventoryMetadata(signal),
-      fetchInventoryItems(signal),
+      fetchInventoryMetadata(abortController.signal),
+      fetchInventoryDashboard('', 'すべて', abortController.signal),
     ]);
 
-    if (signal.aborted) {
+    if (abortController.signal.aborted) {
       return;
     }
 
     const categories = metadataResult.status === 'fulfilled' ? metadataResult.value.categories : [];
     const storageLocations =
       metadataResult.status === 'fulfilled' ? metadataResult.value.storageLocations : [];
-    const items = itemsResult.status === 'fulfilled' ? itemsResult.value : [];
+    const dashboard = itemsResult.status === 'fulfilled'
+      ? itemsResult.value
+      : {
+          groupedItems: [],
+          items: [],
+          shoppingList: [],
+          summary: {
+            expiringSoon: 0,
+            lowStock: 0,
+            totalQuantity: 0,
+          },
+        };
 
     const statusMessage =
       metadataResult.status === 'fulfilled' && itemsResult.status === 'fulfilled'
@@ -73,9 +113,14 @@ export const useInventoryDashboard = () => {
       type: 'loadCompleted',
       payload: {
         categories,
-        items,
+        groupedItems: dashboard.groupedItems,
+        items: dashboard.items,
+        search: '',
+        shoppingList: dashboard.shoppingList,
+        selectedCategory: 'すべて',
         statusMessage,
         storageLocations,
+        summary: dashboard.summary,
       },
     });
   };
@@ -85,10 +130,10 @@ export const useInventoryDashboard = () => {
     if (!targetItem) return;
 
     try {
-      const savedItem = await updateInventoryItem(id, {
+      await updateInventoryItem(id, {
         quantity: Math.max(0, targetItem.quantity + delta),
       });
-      dispatch({ type: 'itemUpdated', item: savedItem, statusMessage: '在庫数を更新しました。' });
+      await loadDashboard(stateRef.current.search, stateRef.current.selectedCategory, '在庫数を更新しました。');
     } catch {
       dispatch({
         type: 'statusUpdated',
@@ -113,13 +158,13 @@ export const useInventoryDashboard = () => {
       };
 
       if (stateRef.current.formMode === 'edit' && stateRef.current.editingItemId) {
-        const savedItem = await updateInventoryItem(stateRef.current.editingItemId, normalizedPayload);
-        dispatch({ type: 'itemUpdated', item: savedItem, statusMessage: '在庫情報を更新しました。' });
+        await updateInventoryItem(stateRef.current.editingItemId, normalizedPayload);
+        await loadDashboard(stateRef.current.search, stateRef.current.selectedCategory, '在庫情報を更新しました。');
         return true;
       }
 
-      const savedItem = await createInventoryItem(normalizedPayload);
-      dispatch({ type: 'itemAdded', item: savedItem, statusMessage: '在庫を追加しました。' });
+      await createInventoryItem(normalizedPayload);
+      await loadDashboard(stateRef.current.search, stateRef.current.selectedCategory, '在庫を追加しました。');
       return true;
     } catch {
       dispatch({
@@ -136,7 +181,7 @@ export const useInventoryDashboard = () => {
   const deleteItem = async (id: string) => {
     try {
       await deleteInventoryItem(id);
-      dispatch({ type: 'itemDeleted', id, statusMessage: '在庫を削除しました。' });
+      await loadDashboard(stateRef.current.search, stateRef.current.selectedCategory, '在庫を削除しました。');
     } catch {
       dispatch({
         type: 'statusUpdated',
@@ -151,10 +196,12 @@ export const useInventoryDashboard = () => {
 
   const updateSearch = (value: string) => {
     dispatch({ type: 'searchChanged', value });
+    void loadDashboard(value, stateRef.current.selectedCategory);
   };
 
   const updateSelectedCategory = (value: string) => {
     dispatch({ type: 'selectedCategoryChanged', value });
+    void loadDashboard(stateRef.current.search, value);
   };
 
   const startEditingItem = (id: string) => {
@@ -173,22 +220,22 @@ export const useInventoryDashboard = () => {
     cancelEditingItem,
     deleteItem,
     editingItemId: state.editingItemId,
-    filteredItems,
-    groupedItems,
     form: state.form,
     formMode: state.formMode,
+    groupedItems: state.groupedItems,
     isLoading: state.isLoading,
+    items: state.items,
     search: state.search,
     selectedCategory: state.selectedCategory,
     setForm: updateForm,
     setSearch: updateSearch,
     setSelectedCategory: updateSelectedCategory,
-    shoppingList,
+    shoppingList: state.shoppingList,
     startEditingItem,
     statusMessage: state.statusMessage,
     storageLocations: state.storageLocations,
     submitInventoryForm,
-    summary,
+    summary: state.summary,
     updateQuantity,
   };
 };

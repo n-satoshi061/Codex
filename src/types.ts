@@ -12,9 +12,13 @@ export type StockItem = {
   storageLocationId: string;
   storageLocationName: string;
   quantity: number;
+  effectiveQuantity: number;
   threshold: number;
   unit: string;
   expiresAt: string;
+  daysUntilExpiration: number | null;
+  isExpired: boolean;
+  isExpiringSoon: boolean;
   updatedAt: string;
   note: string;
 };
@@ -47,6 +51,12 @@ export type ShoppingMemoItem = {
   unit: string;
 };
 
+export type InventorySummary = {
+  lowStock: number;
+  expiringSoon: number;
+  totalQuantity: number;
+};
+
 export type GroupedStockItem = {
   id: string;
   name: string;
@@ -61,8 +71,16 @@ export type GroupedStockItem = {
   expiredCount: number;
   expiredQuantity: number;
   nearestExpiresAt: string;
+  nearestExpirationDays: number | null;
   hasExpiredItems: boolean;
   lowStock: boolean;
   expiringSoon: boolean;
   items: StockItem[];
+};
+
+export type InventoryDashboardResponse = {
+  items: StockItem[];
+  groupedItems: GroupedStockItem[];
+  shoppingList: ShoppingMemoItem[];
+  summary: InventorySummary;
 };
