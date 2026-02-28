@@ -36,3 +36,31 @@ export type InventoryFormState = {
 };
 
 export type InventoryFormMode = 'create' | 'edit';
+
+export type ShoppingMemoItem = {
+  name: string;
+  quantity: number;
+  expiredQuantity: number;
+  threshold: number;
+  unit: string;
+};
+
+export type GroupedStockItem = {
+  id: string;
+  name: string;
+  categoryName: string;
+  storageLocationName: string;
+  quantity: number;
+  registeredQuantity: number;
+  threshold: number;
+  unit: string;
+  note: string;
+  entryCount: number;
+  expiredCount: number;
+  expiredQuantity: number;
+  nearestExpiresAt: string;
+  hasExpiredItems: boolean;
+  lowStock: boolean;
+  expiringSoon: boolean;
+  items: StockItem[];
+};

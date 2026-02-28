@@ -12,6 +12,7 @@ const App = () => {
     deleteItem,
     editingItemId,
     filteredItems,
+    groupedItems,
     form,
     formMode,
     isLoading,
@@ -49,7 +50,7 @@ const App = () => {
             <InventoryList
               categories={categories}
               editingItemId={editingItemId}
-              filteredItems={filteredItems}
+              groupedItems={groupedItems}
               isLoading={isLoading}
               search={search}
               selectedCategory={selectedCategory}

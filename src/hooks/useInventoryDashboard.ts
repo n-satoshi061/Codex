@@ -11,7 +11,12 @@ import {
   initialInventoryDashboardState,
   inventoryDashboardReducer,
 } from './inventoryDashboardReducer';
-import { extractShoppingList, filterInventoryItems, summarizeInventory } from '../utils/inventorySelectors';
+import {
+  extractShoppingList,
+  filterInventoryItems,
+  groupInventoryItems,
+  summarizeInventory,
+} from '../utils/inventorySelectors';
 
 export const useInventoryDashboard = () => {
   const [state, dispatch] = useReducer(
@@ -35,6 +40,7 @@ export const useInventoryDashboard = () => {
     () => filterInventoryItems(state.items, state.selectedCategory, state.search),
     [state.items, state.search, state.selectedCategory],
   );
+  const groupedItems = useMemo(() => groupInventoryItems(filteredItems), [filteredItems]);
 
   const summary = useMemo(() => summarizeInventory(state.items), [state.items]);
   const shoppingList = useMemo(() => extractShoppingList(state.items), [state.items]);
@@ -164,6 +170,7 @@ export const useInventoryDashboard = () => {
     deleteItem,
     editingItemId: state.editingItemId,
     filteredItems,
+    groupedItems,
     form: state.form,
     formMode: state.formMode,
     isLoading: state.isLoading,

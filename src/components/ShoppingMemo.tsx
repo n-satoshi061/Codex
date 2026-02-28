@@ -1,8 +1,8 @@
-import { StockItem } from '../types';
+import { ShoppingMemoItem } from '../types';
 import { MutedText, Panel, PanelHeading, ShoppingItemRow, ShoppingList } from '../styles/appStyles';
 
 type ShoppingMemoProps = {
-  items: StockItem[];
+  items: ShoppingMemoItem[];
 };
 
 export const ShoppingMemo = ({ items }: ShoppingMemoProps) => (
@@ -16,12 +16,13 @@ export const ShoppingMemo = ({ items }: ShoppingMemoProps) => (
         <MutedText>今のところ補充が必要な在庫はありません。</MutedText>
       ) : (
         items.map((item) => (
-          <ShoppingItemRow key={item.id}>
+          <ShoppingItemRow key={item.name}>
             <strong>{item.name}</strong>
             <MutedText>
               残り {item.quantity}
-              {item.unit} / 目標 {item.threshold}
+              {item.unit} / 合計目標 {item.threshold}
               {item.unit}
+              {item.expiredQuantity > 0 ? ` / 期限切れ除外 ${item.expiredQuantity}${item.unit}` : ''}
             </MutedText>
           </ShoppingItemRow>
         ))

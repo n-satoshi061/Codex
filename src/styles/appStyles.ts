@@ -331,6 +331,7 @@ export const NoteText = styled.p`
 export const ItemActions = styled.div`
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 
   @media (max-width: 960px) {
     justify-content: flex-start;
@@ -363,4 +364,33 @@ export const ShoppingItemRow = styled.div`
     border-bottom: 0;
     padding-bottom: 0;
   }
+`;
+
+export const GroupMetaRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+`;
+
+export const DetailToggle = styled.button`
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #ca6702;
+  font-weight: 700;
+`;
+
+export const DetailList = styled.div`
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+`;
+
+export const DetailCard = styled.div`
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(20, 33, 61, 0.08);
 `;
