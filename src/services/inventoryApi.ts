@@ -23,13 +23,13 @@ const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   return (await response.json()) as T;
 };
 
-export const fetchInventoryMetadata = async () => {
-  const response = await fetchJson<{ data: MetadataResponse }>(`${API_BASE_URL}/inventory-metadata`);
+export const fetchInventoryItems = async (signal?: AbortSignal) => {
+  const response = await fetchJson<{ data: StockItem[] }>(`${API_BASE_URL}/inventory-items`, { signal });
   return response.data;
 };
 
-export const fetchInventoryItems = async () => {
-  const response = await fetchJson<{ data: StockItem[] }>(`${API_BASE_URL}/inventory-items`);
+export const fetchInventoryMetadata = async (signal?: AbortSignal) => {
+  const response = await fetchJson<{ data: MetadataResponse }>(`${API_BASE_URL}/inventory-metadata`, { signal });
   return response.data;
 };
 
