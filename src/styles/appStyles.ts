@@ -49,6 +49,42 @@ export const AppShell = styled.main`
   }
 `;
 
+export const PageNavigation = styled.nav`
+  ${glassPanel};
+  margin-bottom: 18px;
+  padding: 12px;
+`;
+
+export const PageNavigationGroup = styled.div`
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+`;
+
+export const NavButton = styled.button<{ $active?: boolean }>`
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 16px;
+  background: ${({ $active }) => ($active ? '#14213d' : 'rgba(255, 255, 255, 0.92)')};
+  color: ${({ $active }) => ($active ? '#fff' : '#36516f')};
+  font-weight: 700;
+  box-shadow: ${({ $active }) => ($active ? '0 10px 24px rgba(20, 33, 61, 0.18)' : 'none')};
+`;
+
+export const PageIntro = styled.section`
+  margin-bottom: 18px;
+
+  h2 {
+    margin: 0 0 6px;
+    font-size: 1.45rem;
+  }
+`;
+
+export const PageIntroText = styled.p`
+  margin: 0;
+  color: #5b718b;
+`;
+
 export const Hero = styled.section`
   display: grid;
   grid-template-columns: 1.3fr 1fr;
@@ -59,6 +95,10 @@ export const Hero = styled.section`
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
   }
+`;
+
+export const PageContent = styled.section`
+  min-height: 0;
 `;
 
 export const HeroText = styled.div``;
@@ -137,6 +177,10 @@ export const LayoutPanel = styled.section`
   }
 `;
 
+export const FormPageLayout = styled.div`
+  max-width: 760px;
+`;
+
 export const ContentStack = styled.div`
   display: grid;
   gap: 24px;
@@ -144,7 +188,7 @@ export const ContentStack = styled.div`
 
 export const Panel = styled.div`
   ${glassPanel};
-  padding: 24px;
+  padding: 18px;
 `;
 
 export const PanelHeading = styled.div`
@@ -248,7 +292,7 @@ export const Toolbar = styled.div`
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
   align-items: end;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
@@ -267,17 +311,20 @@ export const ToolbarActions = styled.div`
 
 export const ItemList = styled.div`
   display: grid;
-  gap: 14px;
+  gap: 10px;
+  max-height: min(64vh, 760px);
+  overflow-y: auto;
+  padding-right: 6px;
 `;
 
 export const ItemCard = styled.article<{ $active?: boolean }>`
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
-  padding: 18px;
+  padding: 14px;
   border: 1px solid ${({ $active }) => ($active ? 'rgba(202, 103, 2, 0.35)' : 'rgba(20, 33, 61, 0.08)')};
-  border-radius: 18px;
+  border-radius: 16px;
   background: ${({ $active }) => ($active ? 'rgba(255, 247, 237, 0.96)' : 'rgba(252, 252, 252, 0.92)')};
 
   @media (max-width: 960px) {
@@ -299,9 +346,9 @@ export const TagRow = styled.div`
 `;
 
 export const Tag = styled.span<{ $tone?: 'default' | 'alert' | 'caution' }>`
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   background: ${({ $tone }) =>
     $tone === 'alert' ? '#ffe3d8' : $tone === 'caution' ? '#fff0b8' : '#edf2f7'};
   color: ${({ $tone }) =>
@@ -310,7 +357,7 @@ export const Tag = styled.span<{ $tone?: 'default' | 'alert' | 'caution' }>`
 
 export const QuantityText = styled.p`
   margin: 0 0 6px;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
 
   span {
@@ -342,14 +389,17 @@ export const ActionButton = styled.button<{ $danger?: boolean }>`
   border: 1px solid rgba(20, 33, 61, 0.12);
   border-radius: 12px;
   min-width: 52px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: #fff;
   color: ${({ $danger }) => ($danger ? '#b42318' : '#14213d')};
 `;
 
 export const ShoppingList = styled.div`
   display: grid;
-  gap: 16px;
+  gap: 10px;
+  max-height: min(64vh, 720px);
+  overflow-y: auto;
+  padding-right: 6px;
 `;
 
 export const ShoppingItemRow = styled.div`
@@ -357,7 +407,7 @@ export const ShoppingItemRow = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 0;
+  padding: 10px 0;
   border-bottom: 1px dashed rgba(20, 33, 61, 0.12);
 
   &:last-child {
@@ -371,7 +421,7 @@ export const GroupMetaRow = styled.div`
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 6px;
 `;
 
 export const DetailToggle = styled.button`
@@ -384,12 +434,12 @@ export const DetailToggle = styled.button`
 
 export const DetailList = styled.div`
   display: grid;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 8px;
+  margin-top: 10px;
 `;
 
 export const DetailCard = styled.div`
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(20, 33, 61, 0.08);
