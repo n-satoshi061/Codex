@@ -36,8 +36,8 @@
 | --- | --- |
 | `App` | 画面構成の配線のみを行う |
 | `HeroSection` | タイトル、状態メッセージ、サマリー表示 |
-| `InventoryForm` | 在庫入力フォーム |
-| `InventoryList` | 在庫一覧、検索、絞り込み、数量更新、削除 |
+| `InventoryForm` | 在庫入力フォーム、編集モード表示、更新・キャンセル操作 |
+| `InventoryList` | 在庫一覧、検索、絞り込み、編集開始、数量更新、削除 |
 | `ShoppingMemo` | 補充対象一覧 |
 
 ### 3.3 状態管理設計
@@ -52,6 +52,8 @@
 | `categories` | カテゴリ一覧 |
 | `storageLocations` | 保管場所一覧 |
 | `form` | 入力フォーム状態 |
+| `formMode` | 新規登録 / 編集モード |
+| `editingItemId` | 編集中在庫 ID |
 | `search` | 検索文字列 |
 | `selectedCategory` | 選択中カテゴリ |
 | `statusMessage` | 画面表示用メッセージ |
@@ -64,6 +66,8 @@
 | `loadStarted` | 初期読み込み開始 |
 | `loadCompleted` | 初期読み込み完了 |
 | `formUpdated` | フォーム入力更新 |
+| `editingStarted` | 在庫編集開始 |
+| `editingCancelled` | 在庫編集キャンセル |
 | `searchChanged` | 検索条件更新 |
 | `selectedCategoryChanged` | カテゴリ絞り込み更新 |
 | `itemAdded` | 在庫追加 |
@@ -85,6 +89,7 @@
 | `summarizeInventory` | サマリー集計 |
 | `extractShoppingList` | 買い物メモ抽出 |
 | `createInitialForm` | フォーム初期値作成 |
+| `createFormFromItem` | 編集対象在庫からフォーム状態を生成 |
 | `daysUntil` | 期限までの日数計算 |
 
 ## 4. API サービス設計
@@ -96,7 +101,7 @@
 | `fetchInventoryMetadata` | `GET /api/inventory-metadata` | マスタ取得 |
 | `fetchInventoryItems` | `GET /api/inventory-items` | 在庫取得 |
 | `createInventoryItem` | `POST /api/inventory-items` | 在庫登録 |
-| `updateInventoryItem` | `PATCH /api/inventory-items/{id}` | 在庫更新 |
+| `updateInventoryItem` | `PATCH /api/inventory-items/{id}` | 在庫更新、編集内容反映 |
 | `deleteInventoryItem` | `DELETE /api/inventory-items/{id}` | 在庫削除 |
 
 ### 4.2 API 通信方針
@@ -104,6 +109,7 @@
 - `fetchJson` で通信処理を共通化する
 - レスポンスエラー時は例外を投げる
 - 削除 API の `204 No Content` を許容する
+- 編集時は新規登録 API を使わず更新 API を利用する
 
 ## 5. バックエンド内部設計
 
@@ -130,6 +136,7 @@
 - 在庫一覧取得
 - 在庫登録
 - 在庫更新
+- 編集対象在庫の読み込み
 - 在庫削除
 - リクエスト値のバリデーション
 - API レスポンス用配列への整形
@@ -214,10 +221,11 @@
 
 | 対象 | テスト内容 |
 | --- | --- |
-| `inventoryDashboardReducer` | 状態遷移 |
-| `useInventoryDashboard` | 初期ロード、更新、失敗系 |
-| `InventoryList` | 表示、操作イベント |
+| `inventoryDashboardReducer` | 状態遷移、編集モード切り替え |
+| `useInventoryDashboard` | 初期ロード、追加、編集、削除、失敗系 |
+| `InventoryList` | 表示、編集開始、操作イベント |
 | `inventorySelectors` | 絞り込み、集計、並び順 |
+| `InventoryItemController` | 在庫編集 API の更新結果 |
 
 ### 8.2 実行コマンド
 
@@ -264,7 +272,18 @@ GitHub Actions で以下を実行する。
 3. 更新 API 呼び出し
 4. 成功時に reducer へ `itemUpdated`
 
-### 10.4 在庫削除
+### 10.4 在庫編集
+
+1. 利用者が編集ボタン押下
+2. `startEditingItem` 実行
+3. reducer へ `editingStarted`
+4. フォームへ対象在庫内容を反映
+5. 利用者が更新ボタン押下
+6. 更新 API 呼び出し
+7. 成功時に reducer へ `itemUpdated`
+8. フォームを初期化し新規登録モードへ戻す
+
+### 10.5 在庫削除
 
 1. 利用者が削除ボタン押下
 2. `deleteItem` 実行
