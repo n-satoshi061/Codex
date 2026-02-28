@@ -1,9 +1,11 @@
-import { InventoryFormState, MasterRecord, StockItem } from '../types';
-import { createInitialForm } from '../utils/inventoryForm';
+import { InventoryFormMode, InventoryFormState, MasterRecord, StockItem } from '../types';
+import { createFormFromItem, createInitialForm } from '../utils/inventoryForm';
 
 export type InventoryDashboardState = {
   categories: MasterRecord[];
+  editingItemId: string | null;
   form: InventoryFormState;
+  formMode: InventoryFormMode;
   isLoading: boolean;
   items: StockItem[];
   search: string;
@@ -24,6 +26,8 @@ type InventoryDashboardAction =
       };
     }
   | { type: 'formUpdated'; updater: (current: InventoryFormState) => InventoryFormState }
+  | { type: 'editingStarted'; item: StockItem }
+  | { type: 'editingCancelled' }
   | { type: 'searchChanged'; value: string }
   | { type: 'selectedCategoryChanged'; value: string }
   | { type: 'itemAdded'; item: StockItem; statusMessage: string }
@@ -33,7 +37,9 @@ type InventoryDashboardAction =
 
 export const initialInventoryDashboardState: InventoryDashboardState = {
   categories: [],
+  editingItemId: null,
   form: createInitialForm(),
+  formMode: 'create',
   isLoading: true,
   items: [],
   search: '',
@@ -56,12 +62,14 @@ export const inventoryDashboardReducer = (
       return {
         ...state,
         categories: action.payload.categories,
+        editingItemId: null,
         form: {
           ...createInitialForm(action.payload.categories, action.payload.storageLocations),
           ...state.form,
           categoryId: state.form.categoryId || action.payload.categories[0]?.id || '',
           storageLocationId: state.form.storageLocationId || action.payload.storageLocations[0]?.id || '',
         },
+        formMode: 'create',
         isLoading: false,
         items: action.payload.items,
         selectedCategory: 'すべて',
@@ -72,6 +80,22 @@ export const inventoryDashboardReducer = (
       return {
         ...state,
         form: action.updater(state.form),
+      };
+    case 'editingStarted':
+      return {
+        ...state,
+        editingItemId: action.item.id,
+        form: createFormFromItem(action.item),
+        formMode: 'edit',
+        statusMessage: `「${action.item.name}」を編集中です。`,
+      };
+    case 'editingCancelled':
+      return {
+        ...state,
+        editingItemId: null,
+        form: createInitialForm(state.categories, state.storageLocations),
+        formMode: 'create',
+        statusMessage: '新しい在庫を登録できます。',
       };
     case 'searchChanged':
       return {
@@ -86,13 +110,18 @@ export const inventoryDashboardReducer = (
     case 'itemAdded':
       return {
         ...state,
+        editingItemId: null,
         form: createInitialForm(state.categories, state.storageLocations),
+        formMode: 'create',
         items: [action.item, ...state.items],
         statusMessage: action.statusMessage,
       };
     case 'itemUpdated':
       return {
         ...state,
+        editingItemId: null,
+        form: createInitialForm(state.categories, state.storageLocations),
+        formMode: 'create',
         items: state.items.map((item) => (item.id === action.item.id ? action.item : item)),
         statusMessage: action.statusMessage,
       };

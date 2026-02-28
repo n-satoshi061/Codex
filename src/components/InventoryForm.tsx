@@ -1,35 +1,46 @@
 import { ChangeEvent, FormEvent } from 'react';
-import { InventoryFormState, MasterRecord } from '../types';
+import { InventoryFormMode, InventoryFormState, MasterRecord } from '../types';
 import {
+  ButtonRow,
   FieldInput,
   FieldLabel,
   FieldSelect,
+  FieldTextarea,
   FormGrid,
   Panel,
   PanelHeading,
   PrimaryButton,
+  SecondaryButton,
   ThreeColumns,
   TwoColumns,
 } from '../styles/appStyles';
 
 type InventoryFormProps = {
+  formMode: InventoryFormMode;
   categories: MasterRecord[];
   form: InventoryFormState;
   isLoading: boolean;
   storageLocations: MasterRecord[];
+  onCancelEdit: () => void;
   onChange: (updater: (current: InventoryFormState) => InventoryFormState) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
 export const InventoryForm = ({
+  formMode,
   categories,
   form,
   isLoading,
   storageLocations,
+  onCancelEdit,
   onChange,
   onSubmit,
 }: InventoryFormProps) => {
   const handleTextChange = (field: keyof InventoryFormState) => (event: ChangeEvent<HTMLInputElement>) => {
+    onChange((current) => ({ ...current, [field]: event.target.value }));
+  };
+
+  const handleTextareaChange = (field: 'note') => (event: ChangeEvent<HTMLTextAreaElement>) => {
     onChange((current) => ({ ...current, [field]: event.target.value }));
   };
 
@@ -45,8 +56,12 @@ export const InventoryForm = ({
   return (
     <Panel>
       <PanelHeading>
-        <h2>在庫を追加</h2>
-        <p>カテゴリと保管場所を選んで登録</p>
+        <h2>{formMode === 'edit' ? '在庫を編集' : '在庫を追加'}</h2>
+        <p>
+          {formMode === 'edit'
+            ? 'カテゴリ、保管場所、期限、メモなどを更新'
+            : 'カテゴリと保管場所を選んで登録'}
+        </p>
       </PanelHeading>
       <FormGrid onSubmit={onSubmit}>
         <FieldLabel>
@@ -93,19 +108,24 @@ export const InventoryForm = ({
             <FieldInput type="number" min="0" value={form.threshold} onChange={handleNumberChange('threshold')} />
           </FieldLabel>
         </ThreeColumns>
-        <TwoColumns>
-          <FieldLabel>
-            賞味・使用期限
-            <FieldInput type="date" value={form.expiresAt} onChange={handleTextChange('expiresAt')} />
-          </FieldLabel>
-          <FieldLabel>
-            メモ
-            <FieldInput value={form.note} onChange={handleTextChange('note')} placeholder="特売日や銘柄など" />
-          </FieldLabel>
-        </TwoColumns>
-        <PrimaryButton type="submit" disabled={isLoading || categories.length === 0}>
-          在庫に追加
-        </PrimaryButton>
+        <FieldLabel>
+          賞味・使用期限
+          <FieldInput type="date" value={form.expiresAt} onChange={handleTextChange('expiresAt')} />
+        </FieldLabel>
+        <FieldLabel>
+          メモ
+          <FieldTextarea value={form.note} onChange={handleTextareaChange('note')} placeholder="特売日、銘柄、補充の目安など" />
+        </FieldLabel>
+        <ButtonRow>
+          <PrimaryButton type="submit" disabled={isLoading || categories.length === 0}>
+            {formMode === 'edit' ? '在庫を更新' : '在庫に追加'}
+          </PrimaryButton>
+          {formMode === 'edit' && (
+            <SecondaryButton type="button" onClick={onCancelEdit}>
+              編集をやめる
+            </SecondaryButton>
+          )}
+        </ButtonRow>
       </FormGrid>
     </Panel>
   );

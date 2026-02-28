@@ -21,11 +21,13 @@ import {
 
 type InventoryListProps = {
   categories: MasterRecord[];
+  editingItemId: string | null;
   filteredItems: StockItem[];
   isLoading: boolean;
   search: string;
   selectedCategory: string;
   onDelete: (id: string) => void;
+  onEdit: (id: string) => void;
   onSearchChange: (value: string) => void;
   onSelectedCategoryChange: (value: string) => void;
   onUpdateQuantity: (id: string, delta: number) => void;
@@ -33,11 +35,13 @@ type InventoryListProps = {
 
 export const InventoryList = ({
   categories,
+  editingItemId,
   filteredItems,
   isLoading,
   search,
   selectedCategory,
   onDelete,
+  onEdit,
   onSearchChange,
   onSelectedCategoryChange,
   onUpdateQuantity,
@@ -68,7 +72,7 @@ export const InventoryList = ({
         const expiring = remaining !== null && remaining <= 7;
 
         return (
-          <ItemCard key={item.id}>
+          <ItemCard key={item.id} $active={editingItemId === item.id}>
             <div>
               <ItemTitleRow>
                 <h3>{item.name}</h3>
@@ -97,6 +101,9 @@ export const InventoryList = ({
               {item.note && <NoteText>{item.note}</NoteText>}
             </div>
             <ItemActions>
+              <ActionButton type="button" onClick={() => onEdit(item.id)}>
+                {editingItemId === item.id ? '編集中' : '編集'}
+              </ActionButton>
               <ActionButton type="button" onClick={() => onUpdateQuantity(item.id, -1)}>
                 -1
               </ActionButton>

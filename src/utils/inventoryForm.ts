@@ -1,4 +1,4 @@
-import { InventoryFormState, MasterRecord } from '../types';
+import { InventoryFormState, MasterRecord, StockItem } from '../types';
 
 export const createInitialForm = (
   categories: MasterRecord[] = [],
@@ -12,4 +12,15 @@ export const createInitialForm = (
   unit: '個',
   expiresAt: '',
   note: '',
+});
+
+export const createFormFromItem = (item: StockItem): InventoryFormState => ({
+  name: item.name,
+  categoryId: item.categoryId,
+  storageLocationId: item.storageLocationId,
+  quantity: item.quantity,
+  threshold: item.threshold,
+  unit: item.unit,
+  expiresAt: item.expiresAt ?? '',
+  note: item.note,
 });

@@ -7,10 +7,13 @@ import { useInventoryDashboard } from './hooks/useInventoryDashboard';
 
 const App = () => {
   const {
+    cancelEditingItem,
     categories,
     deleteItem,
+    editingItemId,
     filteredItems,
     form,
+    formMode,
     isLoading,
     search,
     selectedCategory,
@@ -18,6 +21,7 @@ const App = () => {
     setSearch,
     setSelectedCategory,
     shoppingList,
+    startEditingItem,
     statusMessage,
     storageLocations,
     submitInventoryForm,
@@ -33,20 +37,24 @@ const App = () => {
         <LayoutPanel>
           <InventoryForm
             categories={categories}
+            formMode={formMode}
             form={form}
             isLoading={isLoading}
             storageLocations={storageLocations}
+            onCancelEdit={cancelEditingItem}
             onChange={setForm}
             onSubmit={submitInventoryForm}
           />
           <ContentStack>
             <InventoryList
               categories={categories}
+              editingItemId={editingItemId}
               filteredItems={filteredItems}
               isLoading={isLoading}
               search={search}
               selectedCategory={selectedCategory}
               onDelete={deleteItem}
+              onEdit={startEditingItem}
               onSearchChange={setSearch}
               onSelectedCategoryChange={setSelectedCategory}
               onUpdateQuantity={updateQuantity}

@@ -34,3 +34,5 @@ export type InventoryFormState = {
   expiresAt: string;
   note: string;
 };
+
+export type InventoryFormMode = 'create' | 'edit';

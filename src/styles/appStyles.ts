@@ -178,6 +178,16 @@ export const FieldInput = styled.input`
   background: rgba(255, 255, 255, 0.95);
 `;
 
+export const FieldTextarea = styled.textarea`
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  border: 1px solid rgba(20, 33, 61, 0.14);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.95);
+`;
+
 export const FieldSelect = styled.select`
   width: 100%;
   border: 1px solid rgba(20, 33, 61, 0.14);
@@ -219,6 +229,20 @@ export const PrimaryButton = styled.button`
   }
 `;
 
+export const SecondaryButton = styled.button`
+  border: 1px solid rgba(20, 33, 61, 0.14);
+  border-radius: 999px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #14213d;
+`;
+
+export const ButtonRow = styled.div`
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+`;
+
 export const Toolbar = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -246,15 +270,15 @@ export const ItemList = styled.div`
   gap: 14px;
 `;
 
-export const ItemCard = styled.article`
+export const ItemCard = styled.article<{ $active?: boolean }>`
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
   align-items: center;
   padding: 18px;
-  border: 1px solid rgba(20, 33, 61, 0.08);
+  border: 1px solid ${({ $active }) => ($active ? 'rgba(202, 103, 2, 0.35)' : 'rgba(20, 33, 61, 0.08)')};
   border-radius: 18px;
-  background: rgba(252, 252, 252, 0.92);
+  background: ${({ $active }) => ($active ? 'rgba(255, 247, 237, 0.96)' : 'rgba(252, 252, 252, 0.92)')};
 
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
