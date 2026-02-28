@@ -77,6 +77,53 @@ describe('inventoryDashboardReducer', () => {
     expect(nextState.statusMessage).toBe('在庫を追加しました。');
   });
 
+  it('編集開始時に対象在庫の内容をフォームへ反映する', () => {
+    const loadedState = inventoryDashboardReducer(initialInventoryDashboardState, {
+      type: 'loadCompleted',
+      payload: {
+        categories: metadataFixture.categories,
+        items: stockItemsFixture,
+        statusMessage: 'loaded',
+        storageLocations: metadataFixture.storageLocations,
+      },
+    });
+
+    const nextState = inventoryDashboardReducer(loadedState, {
+      type: 'editingStarted',
+      item: stockItemsFixture[1],
+    });
+
+    expect(nextState.formMode).toBe('edit');
+    expect(nextState.editingItemId).toBe('item-soap');
+    expect(nextState.form.name).toBe('ハンドソープ');
+    expect(nextState.form.note).toBe('');
+    expect(nextState.statusMessage).toBe('「ハンドソープ」を編集中です。');
+  });
+
+  it('編集キャンセル時にフォームを初期化して通常モードへ戻す', () => {
+    const editingState = inventoryDashboardReducer(
+      {
+        ...initialInventoryDashboardState,
+        categories: metadataFixture.categories,
+        storageLocations: metadataFixture.storageLocations,
+        formMode: 'edit',
+        editingItemId: 'item-rice',
+        form: {
+          ...initialInventoryDashboardState.form,
+          name: '編集中の在庫',
+          categoryId: 'cat-daily',
+        },
+      },
+      { type: 'editingCancelled' },
+    );
+
+    expect(editingState.formMode).toBe('create');
+    expect(editingState.editingItemId).toBeNull();
+    expect(editingState.form.name).toBe('');
+    expect(editingState.form.categoryId).toBe('cat-food');
+    expect(editingState.statusMessage).toBe('新しい在庫を登録できます。');
+  });
+
   it('検索条件と選択カテゴリを更新する', () => {
     const withSearch = inventoryDashboardReducer(initialInventoryDashboardState, {
       type: 'searchChanged',
@@ -106,10 +153,14 @@ describe('inventoryDashboardReducer', () => {
       type: 'formUpdated',
       updater: (current) => ({ ...current, name: '新しい在庫' }),
     });
-    const withUpdatedItem = inventoryDashboardReducer(withForm, {
+    const withEditing = inventoryDashboardReducer(withForm, {
+      type: 'editingStarted',
+      item: stockItemsFixture[0],
+    });
+    const withUpdatedItem = inventoryDashboardReducer(withEditing, {
       type: 'itemUpdated',
       item: { ...stockItemsFixture[0], quantity: 9 },
-      statusMessage: '在庫数を更新しました。',
+      statusMessage: '在庫情報を更新しました。',
     });
     const withDeletedItem = inventoryDashboardReducer(withUpdatedItem, {
       type: 'itemDeleted',
@@ -122,7 +173,10 @@ describe('inventoryDashboardReducer', () => {
     });
 
     expect(withForm.form.name).toBe('新しい在庫');
+    expect(withEditing.formMode).toBe('edit');
     expect(withUpdatedItem.items.find((item) => item.id === 'item-rice')?.quantity).toBe(9);
+    expect(withUpdatedItem.formMode).toBe('create');
+    expect(withUpdatedItem.editingItemId).toBeNull();
     expect(withDeletedItem.items).toHaveLength(1);
     expect(withStatus.statusMessage).toBe('サーバーが応答しません。管理者に問い合わせてください。');
   });

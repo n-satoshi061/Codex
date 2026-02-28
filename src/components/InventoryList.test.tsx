@@ -9,11 +9,13 @@ describe('InventoryList', () => {
     render(
       <InventoryList
         categories={metadataFixture.categories}
+        editingItemId={null}
         filteredItems={stockItemsFixture}
         isLoading={false}
         search=""
         selectedCategory="すべて"
         onDelete={vi.fn()}
+        onEdit={vi.fn()}
         onSearchChange={vi.fn()}
         onSelectedCategoryChange={vi.fn()}
         onUpdateQuantity={vi.fn()}
@@ -29,24 +31,29 @@ describe('InventoryList', () => {
     const user = userEvent.setup();
     const onUpdateQuantity = vi.fn();
     const onDelete = vi.fn();
+    const onEdit = vi.fn();
 
     render(
       <InventoryList
         categories={metadataFixture.categories}
+        editingItemId={null}
         filteredItems={[stockItemsFixture[0]]}
         isLoading={false}
         search=""
         selectedCategory="すべて"
         onDelete={onDelete}
+        onEdit={onEdit}
         onSearchChange={vi.fn()}
         onSelectedCategoryChange={vi.fn()}
         onUpdateQuantity={onUpdateQuantity}
       />,
     );
 
+    await user.click(screen.getByRole('button', { name: '編集' }));
     await user.click(screen.getByRole('button', { name: '+1' }));
     await user.click(screen.getByRole('button', { name: '削除' }));
 
+    expect(onEdit).toHaveBeenCalledWith('item-rice');
     expect(onUpdateQuantity).toHaveBeenCalledWith('item-rice', 1);
     expect(onDelete).toHaveBeenCalledWith('item-rice');
   });
@@ -59,11 +66,13 @@ describe('InventoryList', () => {
     render(
       <InventoryList
         categories={metadataFixture.categories}
+        editingItemId="item-soap"
         filteredItems={[]}
         isLoading={false}
         search=""
         selectedCategory="すべて"
         onDelete={vi.fn()}
+        onEdit={vi.fn()}
         onSearchChange={onSearchChange}
         onSelectedCategoryChange={onSelectedCategoryChange}
         onUpdateQuantity={vi.fn()}

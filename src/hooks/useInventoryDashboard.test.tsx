@@ -169,6 +169,119 @@ describe('useInventoryDashboard', () => {
     expect(deleteInventoryItem).not.toHaveBeenCalled();
   });
 
+  it('編集開始時にフォームへ対象在庫を読み込む', async () => {
+    const { result } = renderHook(() => useInventoryDashboard());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    act(() => {
+      result.current.startEditingItem('item-soap');
+    });
+
+    expect(result.current.formMode).toBe('edit');
+    expect(result.current.editingItemId).toBe('item-soap');
+    expect(result.current.form.name).toBe('ハンドソープ');
+    expect(result.current.form.storageLocationId).toBe('storage-bath');
+  });
+
+  it('編集更新成功時に対象在庫を置き換えて通常モードへ戻す', async () => {
+    vi.mocked(updateInventoryItem).mockResolvedValue({
+      ...stockItemsFixture[0],
+      name: '無洗米',
+      categoryId: 'cat-daily',
+      categoryName: '日用品',
+      storageLocationId: 'storage-bath',
+      storageLocationName: '洗面所',
+      quantity: 5,
+      threshold: 3,
+      expiresAt: '2026-04-15',
+      note: '入れ替え済み',
+    });
+
+    const { result } = renderHook(() => useInventoryDashboard());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    act(() => {
+      result.current.startEditingItem('item-rice');
+      result.current.setForm((current) => ({
+        ...current,
+        name: '無洗米',
+        categoryId: 'cat-daily',
+        storageLocationId: 'storage-bath',
+        quantity: 5,
+        threshold: 3,
+        expiresAt: '2026-04-15',
+        note: '入れ替え済み',
+      }));
+    });
+
+    await act(async () => {
+      await result.current.submitInventoryForm({
+        preventDefault: vi.fn(),
+      } as never);
+    });
+
+    expect(updateInventoryItem).toHaveBeenCalledWith('item-rice', {
+      name: '無洗米',
+      categoryId: 'cat-daily',
+      storageLocationId: 'storage-bath',
+      quantity: 5,
+      threshold: 3,
+      unit: '袋',
+      expiresAt: '2026-04-15',
+      note: '入れ替え済み',
+    });
+    expect(result.current.formMode).toBe('create');
+    expect(result.current.editingItemId).toBeNull();
+    expect(result.current.filteredItems.find((item) => item.id === 'item-rice')?.name).toBe('無洗米');
+    expect(result.current.statusMessage).toBe('在庫情報を更新しました。');
+  });
+
+  it('編集更新失敗時にエラーメッセージを表示して編集状態を維持する', async () => {
+    vi.mocked(updateInventoryItem).mockRejectedValue(new Error('failed'));
+
+    const { result } = renderHook(() => useInventoryDashboard());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    act(() => {
+      result.current.startEditingItem('item-rice');
+    });
+
+    await act(async () => {
+      await result.current.submitInventoryForm({
+        preventDefault: vi.fn(),
+      } as never);
+    });
+
+    expect(result.current.formMode).toBe('edit');
+    expect(result.current.statusMessage).toBe('在庫情報を更新できませんでした。時間をおいて再度お試しください。');
+  });
+
+  it('編集キャンセル時に通常モードへ戻る', async () => {
+    const { result } = renderHook(() => useInventoryDashboard());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    act(() => {
+      result.current.startEditingItem('item-rice');
+      result.current.cancelEditingItem();
+    });
+
+    expect(result.current.formMode).toBe('create');
+    expect(result.current.editingItemId).toBeNull();
+    expect(result.current.form.name).toBe('');
+  });
+
   it('検索とカテゴリ絞り込みを反映する', async () => {
     const { result } = renderHook(() => useInventoryDashboard());
 
