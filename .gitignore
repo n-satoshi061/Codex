@@ -5,6 +5,8 @@ dist
 vite.config.js
 vite.config.d.ts
 .env
+mobile/.expo
+mobile/.env
 backend/.env
 backend/vendor
 coverage

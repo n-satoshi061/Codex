@@ -1,3 +1,4 @@
 bootstrap/cache/*.php
+storage/framework/views/*.php
 storage/logs/*.log
 .phpunit.result.cache
