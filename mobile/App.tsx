@@ -1,8 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { ComponentProps, ReactNode, useMemo, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   SafeAreaView,
@@ -35,6 +39,22 @@ const pageTitle: Record<DashboardView, string> = {
   inventory: '在庫一覧',
   add: '在庫追加',
   shopping: '買い物メモ',
+};
+
+const parseFormDate = (value: string) => {
+  if (!value) {
+    return new Date();
+  }
+
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+};
+
+const formatFormDate = (value: Date) => {
+  const year = value.getFullYear();
+  const month = `${value.getMonth() + 1}`.padStart(2, '0');
+  const day = `${value.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const formatExpiryText = (group: GroupedStockItem) => {
@@ -320,9 +340,28 @@ const InventoryFormScreen = ({
   onCancelEdit: () => void;
   onChange: (updater: (current: InventoryFormState) => InventoryFormState) => void;
   onSubmit: () => void;
-}) => (
-  <View style={styles.section}>
-    <View style={styles.card}>
+}) => {
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const hasExpiresAt = Boolean(form.expiresAt);
+
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+
+    if (event.type !== 'set' || !selectedDate) {
+      return;
+    }
+
+    onChange((current) => ({
+      ...current,
+      expiresAt: formatFormDate(selectedDate),
+    }));
+  };
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.card}>
         <Text style={styles.sectionTitle}>{formMode === 'edit' ? '在庫を編集' : '在庫を追加'}</Text>
         <Text style={styles.sectionMeta}>
           {formMode === 'edit' ? 'カテゴリ、保管場所、期限、メモなどを更新' : 'カテゴリと保管場所を選んで登録'}
@@ -386,11 +425,28 @@ const InventoryFormScreen = ({
         </View>
 
         <FormField label="賞味・使用期限">
-          <FormInput
-            value={form.expiresAt}
-            onChangeText={(value) => onChange((current) => ({ ...current, expiresAt: value }))}
-            placeholder="YYYY-MM-DD"
-          />
+          <Pressable
+            onPress={() => setShowDatePicker(true)}
+            style={({ pressed }) => [
+              styles.dateField,
+              pressed && styles.actionButtonPressed,
+            ]}
+          >
+            <Text style={hasExpiresAt ? styles.dateFieldText : styles.dateFieldPlaceholder}>
+              {hasExpiresAt ? form.expiresAt : '日付を選択'}
+            </Text>
+          </Pressable>
+
+          <View style={styles.actionRow}>
+            <ActionButton label="日付を選ぶ" onPress={() => setShowDatePicker(true)} />
+            {hasExpiresAt ? (
+              <ActionButton
+                label="期限をクリア"
+                onPress={() => onChange((current) => ({ ...current, expiresAt: '' }))}
+                tone="danger"
+              />
+            ) : null}
+          </View>
         </FormField>
 
         <FormField label="メモ">
@@ -414,9 +470,34 @@ const InventoryFormScreen = ({
           />
           {formMode === 'edit' ? <ActionButton label="編集をやめる" onPress={onCancelEdit} /> : null}
         </View>
+      </View>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={showDatePicker}
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowDatePicker(false)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <Text style={styles.modalTitle}>賞味・使用期限を選択</Text>
+            <DateTimePicker
+              value={parseFormDate(form.expiresAt)}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              onChange={handleDateChange}
+            />
+            {Platform.OS === 'ios' ? (
+              <View style={styles.actionRow}>
+                <ActionButton label="閉じる" onPress={() => setShowDatePicker(false)} tone="accent" />
+              </View>
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
-  </View>
-);
+  );
+};
 
 const ShoppingScreen = ({ items }: { items: ShoppingMemoItem[] }) => (
   <View style={styles.section}>
@@ -910,6 +991,41 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
     color: theme.ink,
     fontSize: 15,
+  },
+  dateField: {
+    borderWidth: 1,
+    borderColor: theme.line,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    backgroundColor: theme.surface,
+  },
+  dateFieldText: {
+    color: theme.ink,
+    fontSize: 15,
+  },
+  dateFieldPlaceholder: {
+    color: theme.muted,
+    fontSize: 15,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(45, 36, 31, 0.32)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: theme.card,
+    borderRadius: 24,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: theme.line,
+    gap: 12,
+  },
+  modalTitle: {
+    color: theme.ink,
+    fontSize: 18,
+    fontWeight: '800',
   },
   textArea: {
     minHeight: 108,
