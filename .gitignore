@@ -7,3 +7,4 @@ vite.config.d.ts
 .env
 backend/.env
 backend/vendor
+coverage
