@@ -1,6 +1,5 @@
 import { FormEvent } from 'react';
 import { DashboardNavigation } from './components/DashboardNavigation';
-import { HeroSection } from './components/HeroSection';
 import { InventoryFormPage } from './components/InventoryFormPage';
 import { InventoryPage } from './components/InventoryPage';
 import { ShoppingMemoPage } from './components/ShoppingMemoPage';
@@ -27,10 +26,8 @@ const App = () => {
     setSelectedCategory,
     shoppingList,
     startEditingItem,
-    statusMessage,
     storageLocations,
     submitInventoryForm,
-    summary,
     updateQuantity,
   } = useInventoryDashboard();
 
@@ -57,7 +54,6 @@ const App = () => {
     <>
       <GlobalStyle />
       <AppShell>
-        <HeroSection statusMessage={statusMessage} summary={summary} />
         <DashboardNavigation
           activeView={activeView}
           onAddClick={openAddView}

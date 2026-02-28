@@ -42,47 +42,44 @@ const glassPanel = css`
 
 export const AppShell = styled.main`
   min-height: 100vh;
-  padding: 32px;
+  padding: 24px;
 
   @media (max-width: 960px) {
-    padding: 18px;
+    padding: 14px;
   }
 `;
 
 export const PageNavigation = styled.nav`
   ${glassPanel};
-  margin-bottom: 18px;
-  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
 `;
 
 export const PageNavigationGroup = styled.div`
   display: inline-flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+`;
+
+export const PageTitle = styled.h2`
+  margin: 0 6px 0 2px;
+  font-size: 1rem;
 `;
 
 export const NavButton = styled.button<{ $active?: boolean }>`
   border: 0;
   border-radius: 999px;
-  padding: 11px 16px;
+  padding: 9px 14px;
   background: ${({ $active }) => ($active ? '#14213d' : 'rgba(255, 255, 255, 0.92)')};
   color: ${({ $active }) => ($active ? '#fff' : '#36516f')};
   font-weight: 700;
   box-shadow: ${({ $active }) => ($active ? '0 10px 24px rgba(20, 33, 61, 0.18)' : 'none')};
-`;
-
-export const PageIntro = styled.section`
-  margin-bottom: 18px;
-
-  h2 {
-    margin: 0 0 6px;
-    font-size: 1.45rem;
-  }
-`;
-
-export const PageIntroText = styled.p`
-  margin: 0;
-  color: #5b718b;
 `;
 
 export const Hero = styled.section`
@@ -312,9 +309,6 @@ export const ToolbarActions = styled.div`
 export const ItemList = styled.div`
   display: grid;
   gap: 10px;
-  max-height: min(64vh, 760px);
-  overflow-y: auto;
-  padding-right: 6px;
 `;
 
 export const ItemCard = styled.article<{ $active?: boolean }>`
@@ -397,9 +391,6 @@ export const ActionButton = styled.button<{ $danger?: boolean }>`
 export const ShoppingList = styled.div`
   display: grid;
   gap: 10px;
-  max-height: min(64vh, 720px);
-  overflow-y: auto;
-  padding-right: 6px;
 `;
 
 export const ShoppingItemRow = styled.div`
