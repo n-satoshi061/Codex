@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>うちの在庫ノート 内部設計書</title>
+    <style>
+      body { font-family: "Hiragino Sans", "Yu Gothic", sans-serif; font-size: 12pt; line-height: 1.7; margin: 32px; color: #111; }
+      h1, h2, h3, h4 { margin-top: 1.5em; margin-bottom: 0.5em; }
+      h1 { font-size: 22pt; }
+      h2 { font-size: 18pt; border-bottom: 1px solid #999; padding-bottom: 4px; }
+      h3 { font-size: 15pt; }
+      table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; }
+      th, td { border: 1px solid #888; padding: 8px; vertical-align: top; }
+      th { background: #f2f2f2; text-align: left; }
+    </style>
+  </head>
+  <body>
+    <h1>うちの在庫ノート 内部設計書</h1>
+    <h2>1. 文書情報</h2>
+    <ul><li>文書名: うちの在庫ノート 内部設計書</li><li>対象システム: 家庭向け在庫管理アプリ</li><li>作成日: 2026-02-28</li></ul>
+    <h2>2. システム構成</h2>
+    <table><thead><tr><th>層</th><th>技術</th><th>役割</th></tr></thead><tbody>
+      <tr><td>フロントエンド</td><td>React + Vite + TypeScript + styled-components</td><td>画面表示、入力受付、API 呼び出し</td></tr>
+      <tr><td>バックエンド</td><td>Laravel</td><td>API 提供、バリデーション、DB 永続化</td></tr>
+      <tr><td>データベース</td><td>MySQL</td><td>在庫、カテゴリ、保管場所の保存</td></tr>
+      <tr><td>CI/CD</td><td>GitHub Actions</td><td>ビルド、型チェック、PHP 構文チェック</td></tr>
+    </tbody></table>
+    <h2>3. フロントエンド内部設計</h2>
+    <h3>3.1 ディレクトリ構成</h3>
+    <table><thead><tr><th>パス</th><th>役割</th></tr></thead><tbody>
+      <tr><td>src/App.tsx</td><td>画面全体の組み立て</td></tr>
+      <tr><td>src/components/</td><td>表示コンポーネント</td></tr>
+      <tr><td>src/hooks/useInventoryDashboard.ts</td><td>在庫画面の状態管理と操作処理</td></tr>
+      <tr><td>src/hooks/inventoryDashboardReducer.ts</td><td>状態遷移</td></tr>
+      <tr><td>src/services/inventoryApi.ts</td><td>API 通信</td></tr>
+      <tr><td>src/utils/</td><td>純粋関数、selector、補助処理</td></tr>
+      <tr><td>src/styles/appStyles.ts</td><td>styled-components 定義</td></tr>
+      <tr><td>src/types.ts</td><td>型定義</td></tr>
+    </tbody></table>
+    <h3>3.2 コンポーネント設計</h3>
+    <table><thead><tr><th>コンポーネント</th><th>役割</th></tr></thead><tbody>
+      <tr><td>App</td><td>画面構成の配線のみを行う</td></tr>
+      <tr><td>HeroSection</td><td>タイトル、状態メッセージ、サマリー表示</td></tr>
+      <tr><td>InventoryForm</td><td>在庫入力フォーム</td></tr>
+      <tr><td>InventoryList</td><td>在庫一覧、検索、絞り込み、数量更新、削除</td></tr>
+      <tr><td>ShoppingMemo</td><td>補充対象一覧</td></tr>
+    </tbody></table>
+    <h3>3.3 状態管理設計</h3>
+    <p>状態管理は useInventoryDashboard に集約し、内部で useReducer を利用する。</p>
+    <table><thead><tr><th>状態名</th><th>内容</th></tr></thead><tbody>
+      <tr><td>items</td><td>在庫一覧</td></tr>
+      <tr><td>categories</td><td>カテゴリ一覧</td></tr>
+      <tr><td>storageLocations</td><td>保管場所一覧</td></tr>
+      <tr><td>form</td><td>入力フォーム状態</td></tr>
+      <tr><td>search</td><td>検索文字列</td></tr>
+      <tr><td>selectedCategory</td><td>選択中カテゴリ</td></tr>
+      <tr><td>statusMessage</td><td>画面表示用メッセージ</td></tr>
+      <tr><td>isLoading</td><td>読み込み中フラグ</td></tr>
+    </tbody></table>
+    <table><thead><tr><th>アクション</th><th>内容</th></tr></thead><tbody>
+      <tr><td>loadStarted</td><td>初期読み込み開始</td></tr>
+      <tr><td>loadCompleted</td><td>初期読み込み完了</td></tr>
+      <tr><td>formUpdated</td><td>フォーム入力更新</td></tr>
+      <tr><td>searchChanged</td><td>検索条件更新</td></tr>
+      <tr><td>selectedCategoryChanged</td><td>カテゴリ絞り込み更新</td></tr>
+      <tr><td>itemAdded</td><td>在庫追加</td></tr>
+      <tr><td>itemUpdated</td><td>在庫更新</td></tr>
+      <tr><td>itemDeleted</td><td>在庫削除</td></tr>
+      <tr><td>statusUpdated</td><td>状態文言更新</td></tr>
+    </tbody></table>
+    <h3>3.4 副作用設計</h3>
+    <ul><li>初期表示時に useEffect で 1 回だけマスタと在庫一覧を取得する</li><li>AbortController を利用して unmount 後更新を防止する</li><li>派生表示値は reducer 状態に保持せず、selector で算出する</li></ul>
+    <h3>3.5 Selector / Utility 設計</h3>
+    <table><thead><tr><th>関数</th><th>役割</th></tr></thead><tbody>
+      <tr><td>filterInventoryItems</td><td>一覧絞り込みと並び替え</td></tr>
+      <tr><td>summarizeInventory</td><td>サマリー集計</td></tr>
+      <tr><td>extractShoppingList</td><td>買い物メモ抽出</td></tr>
+      <tr><td>createInitialForm</td><td>フォーム初期値作成</td></tr>
+      <tr><td>daysUntil</td><td>期限までの日数計算</td></tr>
+    </tbody></table>
+    <h2>4. API サービス設計</h2>
+    <table><thead><tr><th>関数</th><th>対応 API</th><th>役割</th></tr></thead><tbody>
+      <tr><td>fetchInventoryMetadata</td><td>GET /api/inventory-metadata</td><td>マスタ取得</td></tr>
+      <tr><td>fetchInventoryItems</td><td>GET /api/inventory-items</td><td>在庫取得</td></tr>
+      <tr><td>createInventoryItem</td><td>POST /api/inventory-items</td><td>在庫登録</td></tr>
+      <tr><td>updateInventoryItem</td><td>PATCH /api/inventory-items/{id}</td><td>在庫更新</td></tr>
+      <tr><td>deleteInventoryItem</td><td>DELETE /api/inventory-items/{id}</td><td>在庫削除</td></tr>
+    </tbody></table>
+    <h2>5. バックエンド内部設計</h2>
+    <table><thead><tr><th>メソッド</th><th>パス</th><th>コントローラ</th></tr></thead><tbody>
+      <tr><td>GET</td><td>/api/inventory-metadata</td><td>InventoryMetadataController</td></tr>
+      <tr><td>GET</td><td>/api/inventory-items</td><td>InventoryItemController@index</td></tr>
+      <tr><td>POST</td><td>/api/inventory-items</td><td>InventoryItemController@store</td></tr>
+      <tr><td>PATCH</td><td>/api/inventory-items/{inventoryItem}</td><td>InventoryItemController@update</td></tr>
+      <tr><td>DELETE</td><td>/api/inventory-items/{inventoryItem}</td><td>InventoryItemController@destroy</td></tr>
+    </tbody></table>
+    <h2>6. データベース内部設計</h2>
+    <table><thead><tr><th>テーブル名</th><th>内容</th></tr></thead><tbody>
+      <tr><td>categories</td><td>カテゴリマスタ</td></tr>
+      <tr><td>storage_locations</td><td>保管場所マスタ</td></tr>
+      <tr><td>inventory_items</td><td>在庫本体</td></tr>
+    </tbody></table>
+    <h2>7. バリデーション内部設計</h2>
+    <table><thead><tr><th>項目</th><th>ルール</th></tr></thead><tbody>
+      <tr><td>name</td><td>required / string / max:255</td></tr>
+      <tr><td>categoryId</td><td>required / uuid / exists</td></tr>
+      <tr><td>storageLocationId</td><td>required / uuid / exists</td></tr>
+      <tr><td>quantity</td><td>required / integer / min:0</td></tr>
+      <tr><td>threshold</td><td>required / integer / min:0</td></tr>
+      <tr><td>unit</td><td>required / string / max:30</td></tr>
+      <tr><td>expiresAt</td><td>nullable / date</td></tr>
+      <tr><td>note</td><td>nullable / string / max:1000</td></tr>
+    </tbody></table>
+    <h2>8. テスト設計</h2>
+    <table><thead><tr><th>対象</th><th>テスト内容</th></tr></thead><tbody>
+      <tr><td>inventoryDashboardReducer</td><td>状態遷移</td></tr>
+      <tr><td>useInventoryDashboard</td><td>初期ロード、更新、失敗系</td></tr>
+      <tr><td>InventoryList</td><td>表示、操作イベント</td></tr>
+      <tr><td>inventorySelectors</td><td>絞り込み、集計、並び順</td></tr>
+    </tbody></table>
+    <h2>9. CI/CD 設計</h2>
+    <ul><li>Node.js 環境セットアップ</li><li>フロントエンド依存関係インストール</li><li>TypeScript 型チェック</li><li>フロントエンドビルド</li><li>PHP 環境セットアップ</li><li>Composer 定義確認</li><li>PHP ファイル構文チェック</li></ul>
+    <h2>10. 処理フロー</h2>
+    <h3>10.1 初期表示</h3>
+    <ol><li>フロントエンド起動</li><li>useInventoryDashboard 実行</li><li>マスタ取得 API 呼び出し</li><li>在庫一覧 API 呼び出し</li><li>reducer にロード完了結果を反映</li><li>画面へサマリー、一覧、フォーム初期値を表示</li></ol>
+    <h3>10.2 在庫追加</h3>
+    <ol><li>利用者がフォーム入力</li><li>submitInventoryForm 実行</li><li>登録 API 呼び出し</li><li>追加成功時に reducer へ itemAdded</li><li>一覧更新、フォーム初期化、状態メッセージ更新</li></ol>
+    <h3>10.3 数量更新</h3>
+    <ol><li>利用者が -1 または +1 を押下</li><li>updateQuantity 実行</li><li>更新 API 呼び出し</li><li>成功時に reducer へ itemUpdated</li></ol>
+    <h3>10.4 在庫削除</h3>
+    <ol><li>利用者が削除ボタン押下</li><li>deleteItem 実行</li><li>削除 API 呼び出し</li><li>成功時に reducer へ itemDeleted</li></ol>
+  </body>
+  </html>
